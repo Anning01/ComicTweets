@@ -1,0 +1,8 @@
+requests
+edge_tts
+jieba
+pillow
+tqdm
+moviepy
+numpy
+pyyaml

@@ -1,0 +1,29 @@
+# 书配置
+book:
+  # 小说书名 要和文件同目录 不要带.txt
+  name: 测试
+
+# 音频
+audio:
+  # 每行的字数限制
+  limit: 18
+  # 角色 终端输入 edge-tts --list-voices 可以查看所有声音
+  # 推荐 zh-CN-YunxiNeural 男  zh-CN-XiaoyiNeural  一般  女  zh-CN-XiaoxiaoNeural 最好  女
+  role: zh-CN-YunxiNeural
+  # 语速
+  rate: +45%
+  # 音量
+  volume: +800%
+
+# 分词
+potential:
+  # 角色名字最小长度
+  min_length: 2
+  # 角色名字最大长度
+  max_length: 4
+  # 角色数量
+  top_n: 4
+  # 每张图片的最小文字数量
+  min_words: 30
+  #  每张图片的最大文字数量
+  max_words: 40
