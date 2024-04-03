@@ -1,0 +1,10 @@
+{
+    "enable_hr": true,
+    "denoising_strength": 0.5,
+    "seed": -1,
+    "sampler_name": "DPM++ 3M SDE Karras",
+    "batch_size": 1,
+    "steps": 30,
+    "cfg_scale": 7,
+    "restore_faces": true
+}

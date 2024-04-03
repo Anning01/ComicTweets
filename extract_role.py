@@ -3,7 +3,7 @@ from collections import Counter
 import jieba
 import yaml
 
-with open('config.yaml', 'r') as file:
+with open('config.yaml', 'r', encoding="utf-8") as file:
     config = yaml.safe_load(file)
 min_length = config['potential']['min_length']
 max_length = config['potential']['max_length']

@@ -6,12 +6,16 @@
 # @file:app.py
 
 import requests
+import yaml
 from requests import ConnectionError
 from requests import Timeout
 
+with open("config.yaml", "r", encoding="utf-8") as file:
+    config = yaml.safe_load(file)
+ForwardKey = config["chatgpt"]["ForwardKey"]
+
 
 class Main:
-    ForwardKey = "fk212097-VfP2B8wU6eTgscO7bQf03jFj1RQXSinp"
     url = "https://oa.api2d.net/v1/chat/completions"
 
     def __str__(self):
@@ -21,8 +25,7 @@ class Main:
         # 发送HTTP POST请求
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.ForwardKey}",
-            # <-- 把 fkxxxxx 替换成你自己的 Forward Key，注意前面的 Bearer 要保留，并且和 Key 中间有一个空格。
+            "Authorization": f"Bearer {ForwardKey}",
         }
 
         msg = messages + [

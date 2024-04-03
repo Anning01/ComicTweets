@@ -1,6 +1,6 @@
 import yaml
 
-with open('config.yaml', 'r') as file:
+with open('config.yaml', 'r', encoding="utf-8") as file:
     config = yaml.safe_load(file)
 min_words = config['potential']['min_words']
 max_words = config['potential']['max_words']

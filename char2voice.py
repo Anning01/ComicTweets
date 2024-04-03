@@ -4,7 +4,7 @@ import edge_tts
 import asyncio
 import yaml
 
-with open('config.yaml', 'r') as file:
+with open('config.yaml', 'r', encoding="utf-8") as file:
     config = yaml.safe_load(file)
 limit = config['audio']['limit']
 role = config['audio']['role']

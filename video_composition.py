@@ -5,7 +5,20 @@
 # @time:2023/08/01 14:45
 # @file:app.py
 import os
-os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"
+import yaml
+
+with open("config.yaml", "r", encoding="utf-8") as file:
+    config = yaml.safe_load(file)
+imagemagick_path = config["vodeo"]["imagemagick_path"]
+fontsize = config["vodeo"]["fontsize"]
+fontcolor = config["vodeo"]["fontcolor"]
+fontfile = config["vodeo"]["fontfile"]
+stroke_color = config["vodeo"]["stroke_color"]
+stroke_width = config["vodeo"]["stroke_width"]
+kerning = config["vodeo"]["kerning"]
+position = config["vodeo"]["position"]
+
+os.environ["IMAGEMAGICK_BINARY"] = rf"{imagemagick_path}"
 
 from moviepy.editor import ImageSequenceClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 import numpy as np
@@ -29,18 +42,18 @@ class Main:
 
             # 解析对应的SRT文件
             subtitles = self.parse_srt(srt_path_list[index])
-            print(subtitles)
             # 为当前视频片段添加字幕
             subs = [self.create_text_clip(img_clip, sub['text'], start=sub['start'], duration=sub['end']-sub['start']) for sub in subtitles]
             clip_with_subs = CompositeVideoClip([img_clip] + subs)
 
             clip = clip_with_subs.set_audio(audio_clip)
             clips.append(clip)
+            os.makedirs(file_path, exist_ok=True)
+            clip.write_videofile(os.path.join(file_path, f"{index}.mp4"), fps=24)
             print(f"-----------生成第{index}段视频-----------")
         print(f"-----------开始合成视频-----------")
-        final_clip = concatenate_videoclips(clips)
-        video_path = os.path.join(file_path, name + ".mp4")
-        video_path = './test.mp4'
+        final_clip = concatenate_videoclips(clips, method="chain")
+        video_path = os.path.join(file_path, f"{name}.mp4")
         final_clip.write_videofile(video_path, fps=24)
         return video_path
 
@@ -81,9 +94,9 @@ class Main:
         video_clip_height = img_clip.h # 获取视频的高度
 
 
-        txt_clip = TextClip(text, fontsize=24, color='blue', font="simhei.ttf", method='label')
+        txt_clip = TextClip(text, fontsize=fontsize, color=fontcolor, font=fontfile, stroke_color=stroke_color, stroke_width=stroke_width, kerning=kerning, method='label')
         txt_clip = txt_clip.set_start(start).set_duration(duration)
-        txt_clip = txt_clip.set_position(lambda t: ('center', max(0.9 * video_clip_height - t * 10, 0.9 * video_clip_height)))
+        txt_clip = txt_clip.set_position(lambda t: ('center', max(position * video_clip_height - t * 10, position * video_clip_height)))
 
         return txt_clip
 
@@ -106,16 +119,9 @@ class Main:
 
 if __name__ == '__main__':
     m = Main()
-    picture_path_path = os.path.abspath(f"./image/1txt")
-    audio_path_path = os.path.abspath(f"./participle/1txt")
-    name = "1txt"
-    save_path = os.path.abspath(f"./video/1txt")
+    picture_path_path = os.path.abspath(f"./images/千金")
+    audio_path_path = os.path.abspath(f"./participle/千金")
+    name = "千金"
+    save_path = os.path.abspath(f"./video/千金")
     m.merge_video(picture_path_path, audio_path_path, name, save_path)
 
-    
-    # img_path = sorted([os.path.join(picture_path_path, name) for name in os.listdir(picture_path_path) if name.endswith('.png')])
-    # for i in range(len(img_path)):
-    #     img_name = os.path.split(img_path[i])[-1]
-    #     img_name = img_name.split('.')[0]
-    #     img = io.imread(img_path[i])##img_path[i]就是完整的单个指定文件路径了
-    # print(img_path)

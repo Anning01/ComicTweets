@@ -1,7 +1,9 @@
 # 书配置
 book:
   # 小说书名 要和文件同目录 不要带.txt
-  name: 测试
+  name: 千金
+  # 是否开启记忆，意外退出重新启动从上次意外退出的地方开始执行
+  memory: true
 
 # 音频
 audio:
@@ -11,9 +13,9 @@ audio:
   # 推荐 zh-CN-YunxiNeural 男  zh-CN-XiaoyiNeural  一般  女  zh-CN-XiaoxiaoNeural 最好  女
   role: zh-CN-YunxiNeural
   # 语速
-  rate: +45%
+  rate: +30%
   # 音量
-  volume: +800%
+  volume: +100%
 
 # 分词
 potential:
@@ -27,3 +29,35 @@ potential:
   min_words: 30
   #  每张图片的最大文字数量
   max_words: 40
+
+# 这里只放常规参数，更多参数请修改stable diffusion.json 
+stable_diffusion:
+  # 服务器ip
+  server_ip: http://127.0.0.1:7860
+  # 图片高
+  height: 960
+  # 图片宽
+  width: 540
+
+# 合成视频配置  
+vodeo:
+  # ImageMagick 路径 
+  imagemagick_path: C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe
+  # 字幕字体大小
+  fontsize: 60
+  # 字体颜色
+  fontcolor: white
+  # 字体文件 要求在项目目录下
+  fontfile: simhei.ttf
+  # 描边颜色 内描边
+  stroke_color: yellow
+  # 描边宽
+  stroke_width: 1.5
+  # 文字间距
+  kerning: 1
+  # 字幕位置 越小越靠山 越大越靠下 0 - 1
+  position: 0.9
+
+chatgpt:
+  # ForwardKey
+  ForwardKey: fk212097-VfP2B8wU6eTgscO7bQf03jFj1RQXSinp
