@@ -3,11 +3,11 @@ from collections import Counter
 import jieba
 import yaml
 
-with open('config.yaml', 'r', encoding="utf-8") as file:
+with open("config.yaml", "r", encoding="utf-8") as file:
     config = yaml.safe_load(file)
-min_length = config['potential']['min_length']
-max_length = config['potential']['max_length']
-top_n = config['potential']['top_n']
+min_length = config["potential"]["min_length"]
+max_length = config["potential"]["max_length"]
+top_n = config["potential"]["top_n"]
 
 
 def extract_potential_names(text):
@@ -29,7 +29,7 @@ def extract_potential_names(text):
 
 if __name__ == "__main__":
     # 假设这是你的中文小说文本
-    with open('./表白.txt', "r", encoding="utf8") as f:
+    with open("./表白.txt", "r", encoding="utf8") as f:
         novel_text = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "")
 
     # 提取文本中的潜在人名

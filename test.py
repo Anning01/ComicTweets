@@ -1,6 +1,3 @@
-
-
-
 # import asyncio
 
 
@@ -25,10 +22,9 @@
 
 # asyncio.run(concurrent())
 
+import yaml
 
-import json
-
-
-with open(r'participle/千金/千金messages.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
-print(data)
+with open("config.yaml", "r", encoding="utf-8") as file:
+    config = yaml.safe_load(file)
+lora = config["stable_diffusion"]["lora"]
+print(lora)

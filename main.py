@@ -12,10 +12,15 @@ from prompt import generate_prompt
 from sd import Main as sd
 from video_composition import Main as vc
 
-with open('config.yaml', 'r', encoding='utf-8') as file:
+with open("config.yaml", "r", encoding="utf-8") as file:
     config = yaml.safe_load(file)
-name = config['book']['name']
-memory = config['book']['memory']
+name = config["book"]["name"]
+memory = config["book"]["memory"]
+
+if not name:
+    raise Exception("请输入书名")
+if not os.path.exists(f"{name}.txt"):
+    raise Exception("请将小说文件放入根目录")
 
 print("---------------正在分词...---------------")
 with open(f"{name}.txt", "r", encoding="utf-8") as f:
@@ -40,7 +45,11 @@ with open(participle_path, "r", encoding="utf8") as file:
     # 循环输出每一行内容
     index = 0
     for line in lines:
-        if memory and os.path.exists(os.path.join(path, f"{index}.mp3")) and os.path.exists(os.path.join(path, f"{index}.srt")):
+        if (
+                memory
+                and os.path.exists(os.path.join(path, f"{index}.mp3"))
+                and os.path.exists(os.path.join(path, f"{index}.srt"))
+        ):
             print(f"---------------读取缓存语音字幕---------------")
         else:
             create_voice_srt_new2(index, line, path)

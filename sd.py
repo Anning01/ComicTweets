@@ -20,7 +20,8 @@ with open("config.yaml", "r", encoding="utf-8") as file:
 server_ip = config["stable_diffusion"]["server_ip"]
 firstphase_width = config["stable_diffusion"]["width"]
 firstphase_height = config["stable_diffusion"]["height"]
-memory = config['book']['memory']
+lora = config["stable_diffusion"]["lora"]
+memory = config["book"]["memory"]
 
 sd_url, file_path = server_ip + "/sdapi/v1/txt2img", os.path.abspath("./images")
 
@@ -46,11 +47,14 @@ class Main:
         ):
             if memory and os.path.exists(os.path.join(path, f"{index}.png")):
                 continue
+            prompt = obj["prompt"]
+            if lora:
+                prompt = f"{lora}, {prompt}"
             novel_dict = {
-                "firstphase_width": firstphase_width,
-                "firstphase_height": firstphase_height,
+                "width": firstphase_width,
+                "height": firstphase_height,
                 "negative_prompt": obj["negative_prompt"],
-                "prompt": obj["prompt"],
+                "prompt": prompt,
                 **data,
             }
             try:
@@ -85,7 +89,7 @@ class Main:
             image = Image.open(io.BytesIO(image_bytes))
             # 图片存放
             picture_name = str(index) + ".png"
-            
+
             picture_path = os.path.join(path, picture_name)
             image.save(picture_path)
 

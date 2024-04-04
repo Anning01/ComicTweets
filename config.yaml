@@ -1,7 +1,7 @@
 # 书配置
 book:
   # 小说书名 要和文件同目录 不要带.txt
-  name: 千金
+  name:
   # 是否开启记忆，意外退出重新启动从上次意外退出的地方开始执行
   memory: true
 
@@ -38,13 +38,15 @@ stable_diffusion:
   height: 960
   # 图片宽
   width: 540
+  # lora <lora:lora name:weight> 多个用英文,隔开
+  lora:
 
 # 合成视频配置  
-vodeo:
-  # ImageMagick 路径 
-  imagemagick_path: C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe
+video:
+  # ImageMagick 路径 # C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe
+  imagemagick_path:
   # 字幕字体大小
-  fontsize: 60
+  fontsize: 40
   # 字体颜色
   fontcolor: white
   # 字体文件 要求在项目目录下
@@ -52,7 +54,7 @@ vodeo:
   # 描边颜色 内描边
   stroke_color: yellow
   # 描边宽
-  stroke_width: 1.5
+  stroke_width: 1.2
   # 文字间距
   kerning: 1
   # 字幕位置 越小越靠山 越大越靠下 0 - 1
@@ -60,4 +62,4 @@ vodeo:
 
 chatgpt:
   # ForwardKey
-  ForwardKey: fk212097-VfP2B8wU6eTgscO7bQf03jFj1RQXSinp
+  ForwardKey:
