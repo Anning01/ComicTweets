@@ -55,6 +55,10 @@ class Main:
         # 发送HTTP POST请求
         result_json = response.json()
         # 输出结果
+        # 计算token
+        total_tokens = result_json["usage"]["total_tokens"]
+        if total_tokens >= 16385:
+            raise Exception("GPT-3.5-turbo token数量超过限制，请减少内容")
         return msg, result_json["choices"][0]["message"]
 
 
