@@ -3,17 +3,16 @@ import asyncio
 import json
 import os
 
-import yaml
-
 from char2voice import create_voice_srt_new2
 from extract_role import extract_potential_names
+from load_config import get_yaml_config
 from participle import participle
 from prompt import generate_prompt
 from sd import Main as sd
 from video_composition import Main as vc
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+
+config = get_yaml_config()
 name = config["book"]["name"]
 memory = config["book"]["memory"]
 

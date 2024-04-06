@@ -15,6 +15,8 @@ from PIL import Image
 from tqdm import tqdm
 import yaml
 
+from load_config import get_sd_config
+
 with open("config.yaml", "r", encoding="utf-8") as file:
     config = yaml.safe_load(file)
 server_ip = config["stable_diffusion"]["server_ip"]
@@ -33,8 +35,7 @@ class Main:
         :param obj_list:
         :return: 图片地址列表
         """
-        with open("stable_diffusion.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
+        data = get_sd_config()
         path = os.path.join(file_path, book_name)
         if not os.path.isdir(path):
             os.makedirs(path)

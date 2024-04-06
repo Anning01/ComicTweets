@@ -1,11 +1,10 @@
 import json
 import os
 
-import yaml
 from api2d import Main
+from load_config import get_yaml_config
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+config = get_yaml_config()
 memory = config["book"]["memory"]
 
 

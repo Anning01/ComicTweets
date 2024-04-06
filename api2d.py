@@ -6,12 +6,12 @@
 # @file:app.py
 
 import requests
-import yaml
 from requests import ConnectionError
 from requests import Timeout
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+from load_config import get_yaml_config
+
+config = get_yaml_config()
 ForwardKey = config["chatgpt"]["ForwardKey"]
 if not ForwardKey:
     raise Exception("请配置ForwardKey！")

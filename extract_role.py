@@ -1,10 +1,10 @@
 from collections import Counter
 
 import jieba
-import yaml
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+from load_config import get_yaml_config
+
+config = get_yaml_config()
 min_length = config["potential"]["min_length"]
 max_length = config["potential"]["max_length"]
 top_n = config["potential"]["top_n"]

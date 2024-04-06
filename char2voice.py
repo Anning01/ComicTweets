@@ -1,11 +1,12 @@
+import asyncio
 import os.path
 import re
-import edge_tts
-import asyncio
-import yaml
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+import edge_tts
+
+from load_config import get_yaml_config
+
+config = get_yaml_config()
 limit = config["audio"]["limit"]
 role = config["audio"]["role"]
 rate = config["audio"]["rate"]
@@ -205,11 +206,11 @@ def srt_regen_new(f_srt, f_save, flag):
 class CustomSubMaker(edge_tts.SubMaker):
     """重写此方法更好的支持中文"""
 
-    def generate_cn_subs(self, text) -> str:
+    def generate_cn_subs(self, text):
 
         PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!"]
 
-        def clause(self) -> list[str]:
+        def clause(self):
             start = 0
             i = 0
             text_list = []
