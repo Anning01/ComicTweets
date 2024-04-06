@@ -23,7 +23,7 @@ if not os.path.exists(f"{name}.txt"):
 
 print("---------------正在分词...---------------")
 with open(f"{name}.txt", "r", encoding="utf-8") as f:
-    novel = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "")
+    novel = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "").replace("\u2003", "")
 
 path = os.path.join("participle", name)
 os.makedirs(path, exist_ok=True)
