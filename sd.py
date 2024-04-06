@@ -13,12 +13,10 @@ import io
 import aiohttp
 from PIL import Image
 from tqdm import tqdm
-import yaml
 
-from load_config import get_sd_config
+from load_config import get_sd_config, get_yaml_config
 
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
+config = get_yaml_config()
 server_ip = config["stable_diffusion"]["server_ip"]
 firstphase_width = config["stable_diffusion"]["width"]
 firstphase_height = config["stable_diffusion"]["height"]

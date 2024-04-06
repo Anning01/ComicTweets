@@ -41,11 +41,13 @@ def extract_str(text):
         xxx[0]
         .replace("**Negative Prompt:**", "")
         .replace("**Prompt:**", "")
+        .replace("Prompt:", "")
         .replace("\n", "")
     )
     negative_prompt = (
         xxx[1]
         .replace("**Negative Prompt:**", "")
+        .replace("Prompt:", "")
         .replace("**Prompt:**", "")
         .replace("\n", "")
     )
