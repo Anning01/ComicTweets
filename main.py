@@ -56,7 +56,8 @@ with open(participle_path, "r", encoding="utf8") as file:
         index += 1
 
 print("---------------开始提取角色---------------")
-with open(f"{path}/{name}.txt", "r", encoding="utf8") as f:
+role_path = os.path.join(path, f"{name}.txt")
+with open(role_path, "r", encoding="utf8") as f:
     novel_text = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "")
 
 # 提取文本中的潜在人名
@@ -76,8 +77,8 @@ print("---------------开始生成提示词---------------")
 generate_prompt(path, path, name)
 
 print("---------------开始异步生成生成图片---------------")
-
-with open(f"{path}/{name}.json", "r", encoding="utf-8") as f:
+obj_path = os.path.join(path, f"{name}.json")
+with open(obj_path, "r", encoding="utf-8") as f:
     obj_list = json.load(f)
 asyncio.run(sd().draw_picture(obj_list, name))
 
