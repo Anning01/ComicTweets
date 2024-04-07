@@ -75,10 +75,13 @@ async def draw_picture(path):
     obj_path = os.path.join(path, f"{name}.json")
     is_exists = await check_file_exists(obj_path)
     while_count = 0
-    while not is_exists or while_count > 10:
+    while not is_exists:
         await print_tip("等待GPT生成提词器中，请稍等...")
         await asyncio.sleep(6)
+        is_exists = await check_file_exists(obj_path)
         while_count += 1
+        if while_count > 10:
+            raise Exception("GPT一分钟未生成提示词，请检查网络")
     if while_count > 10:
         raise Exception("GPT一分钟未生成提示词，请检查网络")
 
@@ -93,8 +96,7 @@ async def draw_picture(path):
         current_size = os.path.getsize(obj_path)
         if last_modified == current_modified and last_size == current_size:
             # 文件未变化
-            # if datetime.now() - start_wait_time > timedelta(minutes=2):
-            if datetime.now() - start_wait_time > timedelta(seconds=5):
+            if datetime.now() - start_wait_time > timedelta(minutes=1):
                 # 超过2分钟无变化
                 await print_tip("已经将prompt全部执行完成，等待1分钟后未发现新的prompt，结束绘图。")
                 break  # 退出循环
@@ -112,23 +114,6 @@ async def draw_picture(path):
             obj_list = json.loads(content)
             for index, obj in enumerate(obj_list, start=1):
                 await sd().draw_picture(obj, index, name)
-    # processing_count = 0
-    # exit_count = 0
-    # while True:
-    #     async with aiofiles.open(obj_path, "r", encoding="utf-8") as f:
-    #         content = await f.read()  # 异步读取整个文件内容到字符串
-    #         obj_list = json.loads(content)
-    #     for index, obj in enumerate(obj_list, start=1):
-    #         if processing_count == index:
-    #             await asyncio.sleep(10)
-    #             exit_count += 1
-    #             if exit_count >= 12:
-    #                 await print_tip("已经将prompt全部执行完成，等待2分钟后未发现新的prompt，结束程序。")
-    #                 return
-    #             continue
-    #         else:
-    #             await sd().draw_picture(obj, index, name)
-    #             processing_count = index
 
 
 async def main():
