@@ -55,9 +55,10 @@ def extract_str(text):
     return prompt, negative_prompt
 
 
-async def process_line(line, line_number, prompt_json_save_path, messages_save_path, name, messages):
+async def process_line(line, line_number, prompt_json_save_path, messages_save_path, name):
     await print_tip(f"正在处理第{line_number}段")
     is_exists = await check_file_exists(prompt_json_save_path)
+    is_message_exists = await check_file_exists(messages_save_path)
     if memory and is_exists:
         with open(prompt_json_save_path, "r", encoding="utf-8") as file:
             prompt_data = json.load(file)
@@ -65,13 +66,14 @@ async def process_line(line, line_number, prompt_json_save_path, messages_save_p
             await print_tip(f"使用缓存：跳过第{line_number}段")
             return 
         else:
-            async with aiofiles.open(
-                messages_save_path, "r", encoding="utf-8"
-            ) as f:
-                content = await f.read()
-                messages = json.loads(content)
+            if is_message_exists:
+                async with aiofiles.open(
+                    messages_save_path, "r", encoding="utf-8"
+                ) as f:
+                    content = await f.read()
+                    messages = json.loads(content)
     text = f"第{line_number}段：" + line.strip()
-    if not is_exists:
+    if not is_message_exists:
         with open(f"{name}prompt.txt", "r", encoding="utf8") as f:
             messages = [
                 {
@@ -81,10 +83,9 @@ async def process_line(line, line_number, prompt_json_save_path, messages_save_p
             ]
 
     result, message, total_tokens = await Main().prompt_generation_chatgpt(text, messages)
+    await print_tip(f"当前total_tokens:{total_tokens}")
     if total_tokens >= 16385:
         # token 已经达到上限 重新请求GPT 清空之前的记录
-        # 删除文件
-        os.remove(prompt_json_save_path)
         os.remove(messages_save_path)
         return await process_line(line, line_number, prompt_json_save_path, messages_save_path, name)
     else:
