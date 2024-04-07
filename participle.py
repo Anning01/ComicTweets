@@ -6,7 +6,7 @@ max_words = config["potential"]["max_words"]
 
 
 # 根据小说文本进行分词
-def combine_strings(strings):
+async def combine_strings(strings):
     combined = []
     current_srt = ""
     for s in strings:
@@ -23,10 +23,10 @@ def combine_strings(strings):
     return combined
 
 
-def participle(text):
+async def participle(text):
     PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!"]
 
-    def clause() -> list[str]:
+    async def clause():
         start = 0
         i = 0
         text_list = []
@@ -42,8 +42,9 @@ def participle(text):
             i += 1
         return text_list
 
-    text_list = clause()
-    return combine_strings(text_list)
+    text_list = await clause()
+    result = await combine_strings(text_list)
+    return result
 
 
 if __name__ == "__main__":

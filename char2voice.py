@@ -1,7 +1,7 @@
 import asyncio
 import os.path
 import re
-
+import aiofiles
 import edge_tts
 
 from load_config import get_yaml_config
@@ -13,7 +13,7 @@ rate = config["audio"]["rate"]
 volume = config["audio"]["volume"]
 
 
-def spilt_str2(s, t, k=limit):
+async def spilt_str2(s, t, k=limit):
     """
     :param s: 切片文本
     :param t: 切分前时间
@@ -26,7 +26,7 @@ def spilt_str2(s, t, k=limit):
         k = 15
     """
 
-    def time2second(ti):
+    async def time2second(ti):
         """
         :param ti: 输入时间， 格式示例：00:02:56,512
         :return: float
@@ -40,7 +40,7 @@ def spilt_str2(s, t, k=limit):
 
         return second
 
-    def second2time(si):
+    async def second2time(si):
         hours = int(si // 3600)
         minutes = int((si % 3600) // 60)
         seconds = int(si % 60)
@@ -59,7 +59,7 @@ def spilt_str2(s, t, k=limit):
     ss_valid = []
 
     # todo 将所有片段设置成不超过15
-    for _idx, _ss in enumerate(ss):
+    for _ss in ss:
         if len(_ss) > k:
 
             # 暴力截断几段
@@ -92,8 +92,8 @@ def spilt_str2(s, t, k=limit):
 
     # 分配时间戳
     t1, t2 = t.split("-->")
-    ft1 = time2second(t1)
-    ft2 = time2second(t2)
+    ft1 = await time2second(t1)
+    ft2 = await time2second(t2)
     ftd = ft2 - ft1
 
     # 转换成秒数
@@ -101,7 +101,7 @@ def spilt_str2(s, t, k=limit):
 
     tt_s = 0
     line_srt = []
-    for zi, z in enumerate(new_ss):
+    for z in new_ss:
         tt_e = len(z) + tt_s
 
         # 文章最后一句异常处理
@@ -113,8 +113,8 @@ def spilt_str2(s, t, k=limit):
         t_start = round(t_start, 3)
         t_end = round(t_end, 3)
 
-        rec_s = second2time(ft1 + t_start)
-        rec_e = second2time(ft1 + t_end)
+        rec_s = await second2time(ft1 + t_start)
+        rec_e = await second2time(ft1 + t_end)
 
         cc = (f"{rec_s} --> {rec_e}", z)
         line_srt.append(cc)
@@ -124,7 +124,7 @@ def spilt_str2(s, t, k=limit):
     return line_srt
 
 
-def load_srt_new(filename, flag=True):
+async def load_srt_new(filename, flag=True):
     time_format = r"(\d{2}:\d{2}:\d{2}),\d{3} --> (\d{2}:\d{2}:\d{2}),\d{3}"
 
     n = 0  # srt 文件总行数
@@ -133,8 +133,8 @@ def load_srt_new(filename, flag=True):
     count_tmp = 0  # 每个时间区间后的字数行计数
     new_srt = []
 
-    with open(filename, mode="r", encoding="utf-8") as f3:
-        f_lines = f3.readlines()
+    async with aiofiles.open(filename, mode="r", encoding="utf-8") as f3:
+        f_lines = await f3.readlines()
         for line in f_lines:
             line = line.strip("\n")
 
@@ -143,7 +143,7 @@ def load_srt_new(filename, flag=True):
             # 写入新的数据
             #   1)当出现在文本末写入一次
             if n == len(f_lines):
-                new_srt_line = spilt_str2(line_tmp, t_line_cur)
+                new_srt_line = await spilt_str2(line_tmp, t_line_cur)
                 new_srt.append(new_srt_line)
 
             #   2）当新的一行是数字时，srt语句段写入
@@ -152,7 +152,7 @@ def load_srt_new(filename, flag=True):
                 if flag:
                     print(line)
                 if n > 1:
-                    new_srt_line = spilt_str2(line_tmp, t_line_cur)
+                    new_srt_line = await spilt_str2(line_tmp, t_line_cur)
                     new_srt.append(new_srt_line)
                 continue
 
@@ -188,25 +188,25 @@ def load_srt_new(filename, flag=True):
     return srt
 
 
-def save_srt(filename, srt_list):
-    with open(filename, mode="w", encoding="utf-8") as f:
+async def save_srt(filename, srt_list):
+    async with aiofiles.open(filename, mode="w", encoding="utf-8") as f:
         for _li, _l in enumerate(srt_list):
             if _li == len(srt_list) - 1:
                 info = "{}\n{}\n{}".format(_li + 1, _l[0], _l[1])
             else:
                 info = "{}\n{}\n{}\n\n".format(_li + 1, _l[0], _l[1])
-            f.write(info)
+            await f.write(info)
 
 
-def srt_regen_new(f_srt, f_save, flag):
-    srt_list = load_srt_new(f_srt, flag)
-    save_srt(f_save, srt_list)
+async def srt_regen_new(f_srt, f_save, flag):
+    srt_list = await load_srt_new(f_srt, flag)
+    await save_srt(f_save, srt_list)
 
 
 class CustomSubMaker(edge_tts.SubMaker):
     """重写此方法更好的支持中文"""
 
-    def generate_cn_subs(self, text):
+    async def generate_cn_subs(self, text):
 
         PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!"]
 
@@ -232,7 +232,7 @@ class CustomSubMaker(edge_tts.SubMaker):
         data = "WEBVTT\r\n\r\n"
         j = 0
         for text in self.text_list:
-            text = self.remove_non_chinese_chars(text)
+            text = await self.remove_non_chinese_chars(text)
             try:
                 start_time = self.offset[j][0]
             except IndexError:
@@ -246,7 +246,7 @@ class CustomSubMaker(edge_tts.SubMaker):
             j += 1
         return data
 
-    def remove_non_chinese_chars(self, text):
+    async def remove_non_chinese_chars(self, text):
         # 使用正则表达式匹配非中文字符和非数字
         pattern = re.compile(r"[^\u4e00-\u9fff0-9]+")
         # 使用空字符串替换匹配到的非中文字符和非数字
@@ -260,17 +260,18 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
         text=content, voice=p_voice, rate=p_rate, volume=p_volume
     )
     sub_maker = CustomSubMaker()
-    with open(f_mp3, "wb") as file:
+    async with aiofiles.open(f_mp3, "wb") as file:
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
-                file.write(chunk["data"])
+                await file.write(chunk["data"])
             elif chunk["type"] == "WordBoundary":
                 sub_maker.create_sub(
                     (chunk["offset"], chunk["duration"]), chunk["text"]
                 )
 
-    with open(f_vtt, "w", encoding="utf-8") as file:
-        file.write(sub_maker.generate_cn_subs(content))
+    async with aiofiles.open(f_vtt, "w", encoding="utf-8") as file:
+        content_to_write = await sub_maker.generate_cn_subs(content)
+        await file.write(content_to_write)
 
     # vtt -》 srt
     idx = 1  # 字幕序号
@@ -284,7 +285,7 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
                 f_out.write(line)
 
 
-def create_voice_srt_new2(
+async def create_voice_srt_new2(
     index, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
 ):
     mp3_name = f"{index}.mp3"
@@ -297,11 +298,13 @@ def create_voice_srt_new2(
     file_srt = os.path.join(save_dir, srt_name)
     file_srt_final = os.path.join(save_dir, srt_name_final)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
-    )
-    srt_regen_new(file_srt, file_srt_final, False)
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(
+    #     edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
+    # )
+    await edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
+
+    await srt_regen_new(file_srt, file_srt_final, False)
 
     #  删除其他生成文件
     os.remove(file_vtt)

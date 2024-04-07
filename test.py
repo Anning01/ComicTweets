@@ -1,30 +1,27 @@
-# import asyncio
+import asyncio
+import os.path
+import time
 
 
-# async def test():
-#     for i in range(10):
-#         print(f"Test {i}")
-#         await asyncio.sleep(1)
+async def function_one():
+    print("Function one is done")
+    await asyncio.sleep(5)
+    os.path.join("./", "file.txt")
+    await asyncio.sleep(5)
+    print("Function one is done with file operation")
 
 
-# async def main():
-#     for i in range(10):
-#         print(f"Main {i}")
-#         await asyncio.sleep(1)
+async def function_two():
+    print("Function two is done")
+    await asyncio.sleep(5)
+    print("哈哈哈哈哈哈或")
+    await asyncio.sleep(5)
+    print("Function two is done with file operation")
 
 
-# async def concurrent():
-#     task1 = asyncio.create_task(test())
-#     task2 = asyncio.create_task(main())
-#     await task1
-#     await task2
+async def main():
+    await asyncio.gather(function_one(), function_two())
 
 
-# asyncio.run(concurrent())
-
-import yaml
-
-with open("config.yaml", "r", encoding="utf-8") as file:
-    config = yaml.safe_load(file)
-lora = config["stable_diffusion"]["lora"]
-print(lora)
+# 运行事件循环
+asyncio.run(main())

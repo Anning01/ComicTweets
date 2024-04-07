@@ -7,6 +7,7 @@
 import json
 import os
 import yaml
+from aiofiles import os as aio_os
 
 # 自用配置文件路径
 local_config_path = "local_config.yaml"
@@ -39,3 +40,15 @@ def get_sd_config(config_path=public_stable_diffusion_path):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = json.load(f)
     return config
+
+
+async def print_tip(tip, blank_line=0):
+    """打印提示文字和空行"""
+    blank = '\n' * blank_line if blank_line else ''
+    print('-' * 20, tip, '-' * 20, blank)
+
+
+async def check_file_exists(file_path):
+    exists = await aio_os.path.exists(file_path)
+    return exists
+

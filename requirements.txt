@@ -6,3 +6,4 @@ tqdm
 moviepy
 numpy
 pyyaml
+aiofiles

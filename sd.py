@@ -9,12 +9,13 @@ import base64
 import json
 import os
 import io
+import aiofiles
 
 import aiohttp
 from PIL import Image
 from tqdm import tqdm
 
-from load_config import get_sd_config, get_yaml_config
+from load_config import get_sd_config, get_yaml_config, check_file_exists
 
 config = get_yaml_config()
 server_ip = config["stable_diffusion"]["server_ip"]
@@ -28,7 +29,73 @@ sd_url, file_path = server_ip + "/sdapi/v1/txt2img", os.path.abspath("./images")
 
 class Main:
 
-    async def draw_picture(self, obj_list, book_name):
+    async def draw_picture(self, obj, index, book_name):
+        data = get_sd_config()
+        path = os.path.join(file_path, book_name)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        is_exists = await check_file_exists(os.path.join(path, f"{index}.png"))
+        if memory and is_exists:
+            return
+        prompt = obj["prompt"]
+        if lora:
+            prompt = f"{lora}, {prompt}"
+        novel_dict = {
+            "width": firstphase_width,
+            "height": firstphase_height,
+            "negative_prompt": obj["negative_prompt"],
+            "prompt": prompt,
+            **data,
+        }
+        try:
+            # 替换成异步协程
+            async with aiohttp.ClientSession() as session:
+                async with session.post(sd_url, json=novel_dict) as response:
+                    html = await response.read()
+        except Exception as e:
+            print(e)
+            raise ConnectionError(
+                "Stable Diffusion 连接失败，请查看ip+端口是否匹配，是否开启。"
+            )
+        try:
+            img_response = json.loads(html)
+        except Exception as e:
+            if str(e) == "Expecting value: line 2 column 1 (char 1)":
+                raise Exception(
+                    f"{sd_url} 返回数据异常，请查看是否开启，或者是否连接成功。"
+                )
+            raise Exception(str(html))
+        images = img_response.get("images", None)
+        if not images:
+            raise Exception(
+                img_response.get(
+                    "errors",
+                    "Stable Diffusion 返回数据异常，请查看ip+端口是否匹配，是否开启。",
+                )
+            )
+        image_bytes = base64.b64decode(images[0])
+        image = Image.open(io.BytesIO(image_bytes))
+        # 图片存放
+        picture_name = str(index) + ".png"
+
+        picture_path = os.path.join(path, picture_name)
+        image.save(picture_path)
+        # await self.save_image_async(image_bytes, path, index)
+
+    async def save_image_async(self, image_bytes, path, index):
+        # 将同步的图像处理部分运行在一个线程中
+        loop = asyncio.get_event_loop()
+        image = await loop.run_in_executor(None, lambda: Image.open(io.BytesIO(image_bytes)))
+
+        # 构造文件名和路径
+        picture_name = f"{index}.png"
+        picture_path = os.path.join(path, picture_name)
+
+        # 异步保存图像
+        async with aiofiles.open(picture_path, 'wb') as f:
+            await loop.run_in_executor(None, image.save, f, 'PNG')
+
+    async def batch_draw_picture(self, obj_list, book_name):
         """
         :param obj_list:
         :return: 图片地址列表
@@ -37,6 +104,7 @@ class Main:
         path = os.path.join(file_path, book_name)
         if not os.path.isdir(path):
             os.makedirs(path)
+
         for index, obj in enumerate(
             tqdm(
                 obj_list,

@@ -10,7 +10,7 @@ max_length = config["potential"]["max_length"]
 top_n = config["potential"]["top_n"]
 
 
-def extract_potential_names(text):
+async def extract_potential_names(text):
 
     # 使用 jieba 进行中文分词
     words = jieba.lcut(text)

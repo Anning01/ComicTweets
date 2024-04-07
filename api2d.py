@@ -4,8 +4,11 @@
 # @email:anningforchina@gmail.com
 # @time:2023/08/01 18:08
 # @file:app.py
+import asyncio
 
+import aiohttp
 import requests
+from aiohttp import ClientTimeout, ClientConnectionError
 from requests import ConnectionError
 from requests import Timeout
 
@@ -22,7 +25,30 @@ class Main:
     def __str__(self):
         return "API2D请求失败，请检查配置！"
 
-    def prompt_generation_chatgpt(self, param, messages):
+    async def fetch_data(self, headers, data):
+        timeout = ClientTimeout(total=30)  # 设置总超时时间为15秒
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            try:
+                response = await session.post(self.url, headers=headers, json=data)
+                # 确保我们总是消费响应的内容，释放连接
+                response_text = await response.text()
+            except asyncio.TimeoutError:
+                return False, "API2D连接超时，30秒未响应！"
+            except ClientConnectionError:
+                return False, f"连接错误，{self.url} 建立连接失败，请检查网络。"
+            except Exception as e:
+                return False, str(e)
+
+            if response.status not in [200, 201]:  # 检查HTTP状态码
+                try:
+                    error_message = await response.json()
+                except Exception:  # 如果响应不是JSON格式，则使用文本
+                    error_message = response_text
+                return False, error_message.get("message", "API2D返回状态码错误，请检查配置！")
+
+            return True, response_text  # 或其他处理逻辑
+
+    async def prompt_generation_chatgpt(self, param, messages):
         # 发送HTTP POST请求
         headers = {
             "Content-Type": "application/json",

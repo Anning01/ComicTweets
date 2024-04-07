@@ -2,8 +2,8 @@ import json
 import os
 
 from api2d import Main
-from load_config import get_yaml_config
-
+from load_config import get_yaml_config, check_file_exists, print_tip
+import aiofiles
 config = get_yaml_config()
 memory = config["book"]["memory"]
 
@@ -55,30 +55,32 @@ def extract_str(text):
     return prompt, negative_prompt
 
 
-def generate_prompt(path, save_path, name):
-    with open(f"{path}/{name}.txt", "r", encoding="utf8") as file:
+async def generate_prompt(path, save_path, name):
+    await print_tip("开始生成提示词")
+    async with aiofiles.open(f"{path}/{name}.txt", "r", encoding="utf8") as file:
         # 初始化行数计数器
         line_number = 0
-        lines = file.readlines()
+        lines = await file.readlines()
         messages = []
         # 循环输出每一行内容
         prompt_json_save_path = os.path.join(save_path, f"{name}.json")
         for line in lines:
             if line:
                 line_number += 1
-                print(f"正在处理第{line_number}段")
-                if memory and os.path.exists(prompt_json_save_path):
+                await print_tip(f"正在处理第{line_number}段")
+                is_exists = await check_file_exists(prompt_json_save_path)
+                if memory and is_exists:
                     with open(prompt_json_save_path, "r", encoding="utf-8") as file:
                         prompt_data = json.load(file)
                     if line_number <= len(prompt_data):
-                        print(f"使用记忆：第{line_number}段")
+                        await print_tip(f"使用缓存：跳过第{line_number}段")
                         continue
                     else:
-                        print("加载缓存数据")
-                        with open(
+                        async with aiofiles.open(
                             f"{save_path}/{name}messages.json", "r", encoding="utf-8"
                         ) as f:
-                            messages = json.load(f)
+                            content = await f.read()
+                            messages = json.loads(content)
                 text = f"第{line_number}段：" + line.strip()
                 if line_number == 1:
                     with open(f"{name}prompt.txt", "r", encoding="utf8") as f:
@@ -89,7 +91,7 @@ def generate_prompt(path, save_path, name):
                             }
                         ]
 
-                result, message = Main().prompt_generation_chatgpt(text, messages)
+                result, message = await Main().prompt_generation_chatgpt(text, messages)
                 prompt, negative_prompt = extract_str(message)
                 write_to_json(
                     {"prompt": prompt, "negative_prompt": negative_prompt},
