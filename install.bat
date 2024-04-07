@@ -1,4 +1,6 @@
 @echo off
+chcp 65001
+
 echo 创建虚拟环境...
 python -m venv .venv
 
