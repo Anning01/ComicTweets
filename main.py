@@ -108,12 +108,12 @@ async def draw_picture(path):
         last_modified = current_modified
         last_size = current_size
 
-        # 处理新数据
-        async with aiofiles.open(obj_path, "r", encoding="utf-8") as f:
-            content = await f.read()
-            obj_list = json.loads(content)
-            for index, obj in enumerate(obj_list, start=1):
-                await sd().draw_picture(obj, index, name)
+    # 处理新数据
+    async with aiofiles.open(obj_path, "r", encoding="utf-8") as f:
+        content = await f.read()
+        obj_list = json.loads(content)
+        for index, obj in enumerate(obj_list, start=1):
+            await sd().draw_picture(obj, index, name)
 
 
 async def main():
