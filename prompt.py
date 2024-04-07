@@ -1,9 +1,12 @@
 import json
+import json
 import os
+
+import aiofiles
 
 from api2d import Main
 from load_config import get_yaml_config, check_file_exists, print_tip
-import aiofiles
+
 config = get_yaml_config()
 memory = config["book"]["memory"]
 
@@ -90,10 +93,12 @@ async def process_line(line, line_number, prompt_json_save_path, messages_save_p
         return await process_line(line, line_number, prompt_json_save_path, messages_save_path, name)
     else:
         prompt, negative_prompt = extract_str(message)
-        write_to_json(
-            {"prompt": prompt, "negative_prompt": negative_prompt},
-            prompt_json_save_path,
-        )
+        obj = {"prompt": prompt, "negative_prompt": negative_prompt}
+
+        # 创建一个后台任务以非阻塞方式执行绘图函数
+        # asyncio.create_task(SD().draw_picture(obj, line_number, name))
+
+        write_to_json(obj, prompt_json_save_path)
         messages = result + [message]
         with open(messages_save_path, "w") as f:
             f.write(json.dumps(messages))

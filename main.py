@@ -8,6 +8,7 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta
+from concurrent.futures import ProcessPoolExecutor
 
 from aiofiles import os as aio_os
 import aiofiles
@@ -19,7 +20,6 @@ from participle import participle
 from prompt import generate_prompt
 from sd import Main as sd
 from video_composition import Main as vc
-
 
 config = get_yaml_config()
 name = config["book"]["name"]
@@ -71,44 +71,67 @@ async def role(path):
     # ToDo 做人物形象图
 
 
-async def draw_picture(path):
+# async def draw_picture(path):
+#     obj_path = os.path.join(path, f"{name}.json")
+#     is_exists = await check_file_exists(obj_path)
+#     while_count = 0
+#     while not is_exists:
+#         await print_tip("等待GPT生成提词器中，请稍等...")
+#         await asyncio.sleep(6)
+#         is_exists = await check_file_exists(obj_path)
+#         while_count += 1
+#         if while_count > 10:
+#             raise Exception("GPT一分钟未生成提示词，请检查网络")
+#     if while_count > 10:
+#         raise Exception("GPT一分钟未生成提示词，请检查网络")
+#
+#     await print_tip("开始异步生成生成图片")
+#
+#     content = await get_file(obj_path)
+#     obj_list = json.loads(content)
+#     content_length = len(obj_list)
+#     start_wait_time = datetime.now()
+#     for index, obj in enumerate(obj_list, start=1):
+#         await sd().draw_picture(obj, index, name)
+#     while True:
+#         content = await get_file(obj_path)
+#
+#         if content_length == len(json.loads(content)):
+#             # 文件未变化
+#             if datetime.now() - start_wait_time > timedelta(minutes=1):
+#                 # 超过1分钟无变化
+#                 await print_tip("已经将prompt全部执行完成，等待1分钟后未发现新的prompt，结束绘图。")
+#                 break  # 退出循环
+#             await asyncio.sleep(10)  # 短暂等待再次检查
+#             continue
+#         else:
+#             content = await get_file(obj_path)
+#             obj_list = json.loads(content)
+#             for index, obj in enumerate(obj_list, start=1):
+#                 await sd().draw_picture(obj, index, name)
+
+async def new_draw_picture(path):
     obj_path = os.path.join(path, f"{name}.json")
     is_exists = await check_file_exists(obj_path)
-    while_count = 0
-    while not is_exists:
-        await print_tip("等待GPT生成提词器中，请稍等...")
-        await asyncio.sleep(6)
-        is_exists = await check_file_exists(obj_path)
-        while_count += 1
-        if while_count > 10:
-            raise Exception("GPT一分钟未生成提示词，请检查网络")
-    if while_count > 10:
-        raise Exception("GPT一分钟未生成提示词，请检查网络")
+    if not is_exists:
+        raise Exception(f"{name}.json文件不存在")
 
-    await print_tip("开始异步生成生成图片")
-
-    content = await get_file(obj_path)
-    obj_list = json.loads(content)
-    content_length = len(obj_list)
-    start_wait_time = datetime.now()
+    # content = await get_file(obj_path)
+    # obj_list = json.loads(content)
+    with open(obj_path, "r", encoding="utf-8") as f:
+        obj_list = json.load(f)
     for index, obj in enumerate(obj_list, start=1):
+        await print_tip(f"开始生成第{index}张图片")
         await sd().draw_picture(obj, index, name)
-    while True:
-        content = await get_file(obj_path)
 
-        if content_length == len(json.loads(content)):
-            # 文件未变化
-            if datetime.now() - start_wait_time > timedelta(minutes=1):
-                # 超过1分钟无变化
-                await print_tip("已经将prompt全部执行完成，等待1分钟后未发现新的prompt，结束绘图。")
-                break  # 退出循环
-            await asyncio.sleep(10)  # 短暂等待再次检查
-            continue
-        else:
-            content = await get_file(obj_path)
-            obj_list = json.loads(content)
-            for index, obj in enumerate(obj_list, start=1):
-                await sd().draw_picture(obj, index, name)
+
+# 包装函数，用于在新进程中执行 voice_srt
+def run_voice_srt_in_new_process(participle_path, path):
+    # 在新进程中创建新的事件循环并运行 voice_srt
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(voice_srt(participle_path, path))
+    loop.close()
 
 
 async def main():
@@ -131,7 +154,18 @@ async def main():
 
     await role(path)
 
-    await asyncio.gather(voice_srt(participle_path, path), generate_prompt(path, path, name), draw_picture(path))
+    # 创建 ProcessPoolExecutor 来运行新的进程
+    executor = ProcessPoolExecutor()
+
+    # 在新的进程中异步执行 voice_srt
+    # 注意：这里不需要使用 run_coroutine_threadsafe
+    loop = asyncio.get_running_loop()
+    future = loop.run_in_executor(executor, run_voice_srt_in_new_process, participle_path, path)
+
+    # await asyncio.gather(voice_srt(participle_path, path), generate_prompt(path, path, name), draw_picture(path))
+    # await asyncio.gather(generate_prompt(path, path, name), draw_picture(path), future)
+    await generate_prompt(path, path, name)
+    await asyncio.gather(new_draw_picture(path), future)
 
     await print_tip("开始合成视频")
     picture_path_path = os.path.abspath(f"./images/{name}")
