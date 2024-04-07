@@ -14,7 +14,7 @@ import aiofiles
 from char2voice import create_voice_srt_new2
 from check_path import check_command_installed, check_python_version
 from extract_role import extract_potential_names
-from load_config import get_yaml_config, print_tip, check_file_exists
+from load_config import get_yaml_config, print_tip, check_file_exists, get_file
 from participle import participle
 from prompt import generate_prompt
 from sd import Main as sd
@@ -87,33 +87,28 @@ async def draw_picture(path):
 
     await print_tip("开始异步生成生成图片")
 
-    last_modified = os.path.getmtime(obj_path)  # 获取文件的最后修改时间
-    last_size = os.path.getsize(obj_path)  # 获取文件的大小
+    content = await get_file(obj_path)
+    obj_list = json.loads(content)
+    content_length = len(obj_list)
     start_wait_time = datetime.now()
+    for index, obj in enumerate(obj_list, start=1):
+        await sd().draw_picture(obj, index, name)
     while True:
-        # 检查文件状态是否变化
-        current_modified = os.path.getmtime(obj_path)
-        current_size = os.path.getsize(obj_path)
-        if last_modified == current_modified and last_size == current_size:
+        content = await get_file(obj_path)
+
+        if content_length == len(json.loads(content)):
             # 文件未变化
             if datetime.now() - start_wait_time > timedelta(minutes=1):
-                # 超过2分钟无变化
+                # 超过1分钟无变化
                 await print_tip("已经将prompt全部执行完成，等待1分钟后未发现新的prompt，结束绘图。")
                 break  # 退出循环
             await asyncio.sleep(10)  # 短暂等待再次检查
             continue
-
-        # 文件有更新，重置等待计时器
-        start_wait_time = datetime.now()
-        last_modified = current_modified
-        last_size = current_size
-
-    # 处理新数据
-    async with aiofiles.open(obj_path, "r", encoding="utf-8") as f:
-        content = await f.read()
-        obj_list = json.loads(content)
-        for index, obj in enumerate(obj_list, start=1):
-            await sd().draw_picture(obj, index, name)
+        else:
+            content = await get_file(obj_path)
+            obj_list = json.loads(content)
+            for index, obj in enumerate(obj_list, start=1):
+                await sd().draw_picture(obj, index, name)
 
 
 async def main():

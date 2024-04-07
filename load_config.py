@@ -8,7 +8,7 @@ import json
 import os
 import yaml
 from aiofiles import os as aio_os
-
+import aiofiles
 # 自用配置文件路径
 local_config_path = "local_config.yaml"
 # 公共配置文件路径
@@ -51,4 +51,10 @@ async def print_tip(tip, blank_line=0):
 async def check_file_exists(file_path):
     exists = await aio_os.path.exists(file_path)
     return exists
+
+
+async def get_file(file_path):
+    async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+        content = await f.read()
+    return content
 
