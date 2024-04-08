@@ -29,6 +29,12 @@ potential:
   min_words: 30
   #  每张图片的最大文字数量
   max_words: 40
+  # 是否使用阿里云翻译 不使用GPT
+  translate: false
+  # 阿里云翻译key
+  access_key_id:
+  # 阿里云翻译access_key_secret
+  access_key_secret:
 
 # 这里只放常规参数，更多参数请修改stable diffusion.json 
 stable_diffusion:

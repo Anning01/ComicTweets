@@ -6,9 +6,11 @@ import aiofiles
 
 from api2d import Main
 from load_config import get_yaml_config, check_file_exists, print_tip
+from translate import Sample as translate
 
 config = get_yaml_config()
 memory = config["book"]["memory"]
+is_translate = config["potential"]["translate"]
 
 
 def write_to_json(data, filename):
@@ -105,6 +107,19 @@ async def process_line(line, line_number, prompt_json_save_path, messages_save_p
         return 
 
 
+async def translates(text, line_number, prompt_json_save_path):
+    is_exists = await check_file_exists(prompt_json_save_path)
+    if memory and is_exists:
+        with open(prompt_json_save_path, "r", encoding="utf-8") as file:
+            prompt_data = json.load(file)
+        if line_number <= len(prompt_data):
+            await print_tip(f"使用缓存：跳过第{line_number}段")
+            return
+    prompt = translate.main(text)
+    obj = {"prompt": prompt, "negative_prompt": ""}
+    write_to_json(obj, prompt_json_save_path)
+
+
 async def generate_prompt(path, save_path, name):
     await print_tip("开始生成提示词")
     async with aiofiles.open(f"{path}/{name}.txt", "r", encoding="utf8") as file:
@@ -115,8 +130,10 @@ async def generate_prompt(path, save_path, name):
         messages_save_path = os.path.join(save_path, f"{name}messages.json")
         for line_number, line in enumerate(lines, start=1):
             if line:
-                await process_line(line, line_number, prompt_json_save_path, messages_save_path, name)
-
+                if is_translate:
+                    await translates(line, line_number, prompt_json_save_path)
+                else:
+                    await process_line(line, line_number, prompt_json_save_path, messages_save_path, name)
 
     # async with aiofiles.open(f"{path}/{name}.txt", "r", encoding="utf8") as file:
     #     # 初始化行数计数器

@@ -6,3 +6,4 @@ tqdm
 moviepy
 pyyaml
 aiofiles
+alibabacloud-alimt20181012
