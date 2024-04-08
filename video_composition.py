@@ -66,11 +66,12 @@ class Main:
         )
         if os.path.isfile(f"video_path/{name}.txt"):
             os.remove(f"video_path/{name}.txt")
-        filelist = os.listdir(file_path)
-        if len(filelist) != 0: # 开始删除所有文件
-            for file in filelist:
-                os.remove(os.path.join(file_path, file))
-        os.rmdir(file_path)
+        if os.path.exists(file_path):
+            filelist = os.listdir(file_path)
+            if len(filelist) != 0: # 开始删除所有文件
+                for file in filelist:
+                    os.remove(os.path.join(file_path, file))
+            os.rmdir(file_path)
 
         for index, value in enumerate(picture_path_list):
             audio_clip = AudioFileClip(audio_path_list[index])
