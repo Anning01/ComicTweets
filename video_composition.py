@@ -5,6 +5,7 @@
 # @time:2023/08/01 14:45
 # @file:app.py
 import os
+import subprocess
 
 from load_config import get_yaml_config
 
@@ -17,6 +18,7 @@ stroke_color = config["video"]["stroke_color"]
 stroke_width = config["video"]["stroke_width"]
 kerning = config["video"]["kerning"]
 position = config["video"]["position"]
+use_moviepy = config["video"]["use_moviepy"]
 
 if imagemagick_path:
     os.environ["IMAGEMAGICK_BINARY"] = rf"{imagemagick_path}"
@@ -28,7 +30,6 @@ from moviepy.editor import (
     CompositeVideoClip,
     ImageClip,
 )
-import numpy as np
 
 
 class Main:
@@ -70,33 +71,66 @@ class Main:
             img_clip = img_clip.set_position(("center", "center")).set_duration(
                 audio_clip.duration
             )
+            if use_moviepy:
+                # 解析对应的SRT文件
+                subtitles = self.parse_srt(srt_path_list[index])
+                # 为当前视频片段添加字幕
+                subs = [
+                    self.create_text_clip(
+                        img_clip,
+                        sub["text"],
+                        start=sub["start"],
+                        duration=sub["end"] - sub["start"],
+                    )
+                    for sub in subtitles
+                ]
+                clip_with_subs = CompositeVideoClip([img_clip] + subs)
 
-            # 解析对应的SRT文件
-            subtitles = self.parse_srt(srt_path_list[index])
-            # 为当前视频片段添加字幕
-            subs = [
-                self.create_text_clip(
-                    img_clip,
-                    sub["text"],
-                    start=sub["start"],
-                    duration=sub["end"] - sub["start"],
-                )
-                for sub in subtitles
-            ]
-            clip_with_subs = CompositeVideoClip([img_clip] + subs)
-
-            clip = clip_with_subs.set_audio(audio_clip)
+            clip = img_clip.set_audio(audio_clip)
             clips.append(clip)
             os.makedirs(file_path, exist_ok=True)
+            video_path = os.path.join(file_path, f"{index}.mp4")
             clip.write_videofile(
-                os.path.join(file_path, f"{index}.mp4"), fps=24, audio_codec="aac"
+                video_path, fps=24, audio_codec="aac"
             )
+            if not use_moviepy:
+                self.create_srt(
+                    video_path, srt_path_list[index], file_path, name
+                )
             print(f"-----------生成第{index}段视频-----------")
         print(f"-----------开始合成视频-----------")
-        final_clip = concatenate_videoclips(clips)
-        video_path = os.path.join(file_path, f"{name}.mp4")
-        final_clip.write_videofile(video_path, fps=24, audio_codec="aac")
+        if use_moviepy:
+            final_clip = concatenate_videoclips(clips)
+            video_path = os.path.join(file_path, f"{name}.mp4")
+            final_clip.write_videofile(video_path, fps=24, audio_codec="aac")
+        else:
+            self.mm_merge_video(file_path, name)
         return video_path
+
+    def create_srt(self, video_path, srt_path, file_path, name):
+        """
+        创建SRT字幕文件
+        :param video_path: 视频文件路径
+        :return:
+        """
+        out_path = os.path.join(file_path, f"out{name}.mp4")
+        
+        # 构建字体样式字符串，只包含颜色和大小
+        style = f"Fontsize={fontsize},PrimaryColour=&H{fontcolor}"
+        
+        # 构建 FFmpeg 命令，不再设置字体文件路径
+        cmd = [
+            'ffmpeg',
+            '-i', video_path,
+            '-vf', f"subtitles='{srt_path}':force_style='{style}'",
+            '-c:a', 'copy',
+            out_path
+        ]
+
+        # 执行命令
+        subprocess.run(cmd, check=True)
+        os.replace(out_path, video_path)  # 用输出文件替换原始文件
+
 
     def parse_srt(self, srt_path):
         """
@@ -114,6 +148,21 @@ class Main:
                 text = lines[i + 2].strip()
                 subtitles.append({"start": start, "end": end, "text": text})
         return subtitles
+
+    def mm_merge_video(self, video_path, name):
+
+        video_path_list = sorted(
+            [
+                os.path.join(video_path, name)
+                for name in os.listdir(video_path)
+                if name.endswith(".mp4")
+            ]
+        )
+
+        out_path = os.path.join(video_path, f"{name}.mp4")
+        videos_str = '|'.join(video_path_list)
+        subprocess.run(['ffmpeg', '-i', f'concat:{videos_str}', '-c', 'copy', f'{out_path}'])
+
 
     def srt_time_to_seconds(self, time_str):
         """
@@ -156,26 +205,11 @@ class Main:
 
         return txt_clip
 
-    def fl_up(self, gf, t):
-        # 获取原始图像帧
-        frame = gf(t)
-
-        # 进行滚动效果，将图像向下滚动50像素
-        height, width = frame.shape[:2]
-        scroll_y = int(t * 10)  # 根据时间t计算滚动的像素数
-        new_frame = np.zeros_like(frame)
-
-        # 控制滚动的范围，避免滚动超出图像的边界
-        if scroll_y < height:
-            new_frame[: height - scroll_y, :] = frame[scroll_y:, :]
-
-        return new_frame
-
 
 if __name__ == "__main__":
     m = Main()
-    picture_path_path = os.path.abspath(f"./images/千金")
-    audio_path_path = os.path.abspath(f"./participle/千金")
-    name = "千金"
-    save_path = os.path.abspath(f"./video/千金")
+    picture_path_path = os.path.abspath(f"./images/test_image")
+    audio_path_path = os.path.abspath(f"./participle/test_image")
+    name = "test_image"
+    save_path = os.path.abspath(f"./video/test_image")
     m.merge_video(picture_path_path, audio_path_path, name, save_path)

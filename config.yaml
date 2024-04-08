@@ -59,6 +59,8 @@ video:
   kerning: 1
   # 字幕位置 越小越靠山 越大越靠下 0 - 1
   position: 0.9
+  # 使用moviepy或者ffmpeg合成视频
+  use_moviepy: true
 
 chatgpt:
   # ForwardKey
