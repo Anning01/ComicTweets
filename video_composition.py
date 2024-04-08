@@ -64,6 +64,14 @@ class Main:
                 if name.endswith(".srt")
             ]
         )
+        if os.path.isfile(f"video_path/{name}.txt"):
+            os.remove(f"video_path/{name}.txt")
+        filelist = os.listdir(file_path)
+        if len(filelist) != 0: # 开始删除所有文件
+            for file in filelist:
+                os.remove(os.path.join(file_path, file))
+        os.rmdir(file_path)
+
         for index, value in enumerate(picture_path_list):
             audio_clip = AudioFileClip(audio_path_list[index])
             img_clip = ImageClip(picture_path_list[index]).set_duration(audio_clip.duration)
@@ -85,8 +93,10 @@ class Main:
                     for sub in subtitles
                 ]
                 clip_with_subs = CompositeVideoClip([img_clip] + subs)
+                clip = clip_with_subs.set_audio(audio_clip)
+            else:
+                clip = img_clip.set_audio(audio_clip)
 
-            clip = img_clip.set_audio(audio_clip)
             clips.append(clip)
             os.makedirs(file_path, exist_ok=True)
             video_path = os.path.join(file_path, f"{index}.mp4")
@@ -97,6 +107,8 @@ class Main:
                 self.create_srt(
                     video_path, srt_path_list[index], file_path, name
                 )
+                with open(f"{file_path}/{name}.txt", "a", encoding="utf-8") as f:
+                    f.write(f"file '{video_path}'\n")
             print(f"-----------生成第{index}段视频-----------")
         print(f"-----------开始合成视频-----------")
         if use_moviepy:
@@ -105,7 +117,6 @@ class Main:
             final_clip.write_videofile(video_path, fps=24, audio_codec="aac")
         else:
             self.mm_merge_video(file_path, name)
-        return video_path
 
     def create_srt(self, video_path, srt_path, file_path, name):
         """
@@ -158,19 +169,13 @@ class Main:
         return subtitles
 
     def mm_merge_video(self, video_path, name):
-
-        video_path_list = sorted(
-            [
-                os.path.join(video_path, name)
-                for name in os.listdir(video_path)
-                if name.endswith(".mp4")
-            ]
-        )
-
         out_path = os.path.join(video_path, f"{name}.mp4")
-        videos_str = '|'.join(video_path_list)
-        subprocess.run(['ffmpeg', '-i', f'concat:{videos_str}', '-c', 'copy', f'{out_path}'])
-
+        inputs_path = os.path.join(video_path, f"{name}.txt")
+        subprocess.run([
+            'ffmpeg', '-f', 'concat', '-safe', '0', '-i',
+            f'{inputs_path}', '-c', 'copy',
+            f'{out_path}'
+        ])
 
     def srt_time_to_seconds(self, time_str):
         """
