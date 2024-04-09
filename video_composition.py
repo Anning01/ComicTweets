@@ -6,6 +6,7 @@
 # @file:app.py
 import ast
 import os
+import random
 import re
 import subprocess
 
@@ -22,6 +23,10 @@ kerning = config["video"]["kerning"]
 position = config["video"]["position"]
 use_moviepy = config["video"]["use_moviepy"]
 once = config["video"]["once"]
+animation = config["video"]["animation"]
+width = config["stable_diffusion"]["width"]
+height = config["stable_diffusion"]["height"]
+animation_speed = config["audio"]["animation_speed"]
 
 if imagemagick_path:
     os.environ["IMAGEMAGICK_BINARY"] = rf"{imagemagick_path}"
@@ -137,53 +142,120 @@ class Main:
             else:
                 self.mm_merge_video(file_path, name)
 
+    def convert_time_string(self, time_str):
+        # 分割小时、分钟、秒和毫秒
+        hours, minutes, seconds = time_str.split(':')
+        seconds, milliseconds = seconds.split(',')
+
+        # 将分割得到的字符串转换为数值
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
+        milliseconds = int(milliseconds)
+
+        # 将时间转换为秒
+        total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
+
+        return total_seconds
+
     def disposable_synthesis(self, picture_path_list, audio_path, srt_path, time_file, save_path, name):
         # 一次性合成图片视频字幕
         """
         ffmpeg -f concat -safe 0 -i filelist.txt -i audio.mp3 -vf "subtitles=subtitle_file.srt" -vsync vfr -pix_fmt yuv420p output.mp4
         """
 
-        def convert_time_string(time_str):
-            # 分割小时、分钟、秒和毫秒
-            hours, minutes, seconds = time_str.split(':')
-            seconds, milliseconds = seconds.split(',')
-
-            # 将分割得到的字符串转换为数值
-            hours = int(hours)
-            minutes = int(minutes)
-            seconds = int(seconds)
-            milliseconds = int(milliseconds)
-
-            # 将时间转换为秒
-            total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
-
-            return total_seconds
-
         with open(time_file, "r", encoding="utf-8") as f:
             content = f.read()
         time_list = ast.literal_eval(content)
         # 首先创建图片文件
         os.makedirs(save_path, exist_ok=True)
-        file_path = os.path.join(save_path, "filelist.txt")
-        with open(file_path, "w", encoding="utf-8") as f:
-            for index, picture_path in enumerate(picture_path_list):
-                f.write(f"file '{picture_path}'\n")
-                if index < len(time_list):
-                    f.write(f"duration {convert_time_string(time_list[index])}\n")
         out_path = os.path.join(save_path, f"{name}.mp4")
+
+        if animation:
+            self.disposable_synthesis_animation(picture_path_list, time_list, audio_path, save_path, out_path)
+        else:
+            file_path = os.path.join(save_path, "filelist.txt")
+            with open(file_path, "w", encoding="utf-8") as f:
+                for index, picture_path in enumerate(picture_path_list):
+                    f.write(f"file '{picture_path}'\n")
+                    if index < len(time_list):
+                        f.write(f"duration {self.convert_time_string(time_list[index])}\n")
+            cmd = [
+                "ffmpeg",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", file_path,
+                "-i", audio_path,
+                "-vsync", "cfr",
+                "-pix_fmt", "yuv420p",
+                out_path
+            ]
+            subprocess.run(cmd, check=True)
+
+        self.create_srt(out_path, srt_path, save_path, name)
+
+    def create_animated_segment(self, image_path, duration, output_path, index, multiple, action):
+        initial_zoom = 1.0
+        duration = self.convert_time_string(duration)
+        zoom_steps = (multiple - initial_zoom) / (25 * duration)
+        # 取余后三位
+        # zoom_steps = round(zoom_steps, 3)
+        if action == "shrink":
+            scale = f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"+str(duration)+f":s={width}x{height}"
+        else:
+            # scale = f"scale=-2:ih*10,zoompan=z='zoom+{zoom_steps}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*{duration}:s={width}x{height}:fps=25"
+            scale = f"scale=-2:ih*10,zoompan=z='min(zoom+{zoom_steps},{multiple})*if(gte(zoom,1),1,0)+if(lt(zoom,1),1,0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*{duration}:s={width}x{height}"
+
         cmd = [
             "ffmpeg",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", file_path,
-            "-i", audio_path,
-            "-vsync", "cfr",
-            "-pix_fmt", "yuv420p",
-            out_path
+            "-y",  # 覆盖输出文件
+            "-r", "25",  # 帧率
+            "-loop", "1",  # 循环输入图像
+            "-t", str(duration),  # 输出视频片段的持续时间
+            "-i", image_path,  # 输入图像
+            "-filter_complex", scale,
+            "-vframes", str(int(25 * duration)),
+            "-c:v", "libx264",  # 视频编解码器
+            "-pix_fmt", "yuv420p",  # 像素格式
+            f"{output_path}/animated_segment_{index}.mp4"  # 输出路径
         ]
         subprocess.run(cmd, check=True)
 
-        self.create_srt(out_path, srt_path, save_path, name)
+    def concat_videos(self, video_list, audio_path, output_video):
+        with open("temp_list.txt", "w") as f:
+            for video in video_list:
+                f.write(f"file '{video}'\n")
+
+        cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output files without asking
+            "-f", "concat",
+            "-safe", "0",
+            "-i", "temp_list.txt",
+            "-i", audio_path,
+            "-vsync", "cfr",
+            "-pix_fmt", "yuv420p",
+            output_video
+        ]
+        subprocess.run(cmd, check=True)
+
+    def disposable_synthesis_animation(self, picture_path_list, durations, audio_path, save_path, out_path):
+        if os.path.exists(out_path):
+            return
+        video_list = []
+        animations = ["shrink", "magnify"]
+        for index, (image_path, duration) in enumerate(zip(picture_path_list, durations)):
+            output_path = f"{save_path}/animated_segment_{index}.mp4"
+            selected_animation = random.choice(animations)
+            self.create_animated_segment(image_path, duration, save_path, index, animation_speed, selected_animation)
+            video_list.append(output_path)
+
+        self.concat_videos(video_list, audio_path, out_path)
+
+        # Optionally, remove temporary files
+        for video in video_list:
+            os.remove(video)
+        os.remove("temp_list.txt")
 
     def create_srt(self, video_path, srt_path, file_path, name):
         """
@@ -287,8 +359,8 @@ class Main:
 
 if __name__ == "__main__":
     m = Main()
-    picture_path_path = os.path.abspath(f"./images/test_image")
-    audio_path_path = os.path.abspath(f"./participle/test_image")
-    name = "test_image"
-    save_path = os.path.abspath(f"./video/test_image")
+    picture_path_path = os.path.abspath(f"./images/斗破苍穹")
+    audio_path_path = os.path.abspath(f"./participle/斗破苍穹")
+    name = "斗破苍穹"
+    save_path = os.path.abspath(f"./")
     m.merge_video(picture_path_path, audio_path_path, name, save_path)

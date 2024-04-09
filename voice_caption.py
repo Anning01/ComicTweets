@@ -334,12 +334,14 @@ async def create_voice_srt_new3(
     srt_name_final = f"{name}.srt"
 
     file_mp3 = os.path.join(save_dir, mp3_name)
-    exists = await check_file_exists(file_mp3)
-    if exists:
-        return
     file_vtt = os.path.join(save_dir, vtt_name)
     file_srt = os.path.join(save_dir, srt_name)
     file_srt_final = os.path.join(save_dir, srt_name_final)
+    mp3_exists = await check_file_exists(file_mp3)
+    srt_exists = await check_file_exists(file_srt_final)
+    time_exists = await check_file_exists(os.path.join(save_dir, f"{name}time.txt"))
+    if mp3_exists and srt_exists and time_exists:
+        return
     await edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
 
     await srt_regen_new(save_dir, name, file_srt, file_srt_final, False, section_path)

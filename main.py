@@ -38,7 +38,21 @@ async def voice_srt(participle_path, path):
     if once:
         with open(f'{name}.txt', 'r', encoding='utf-8') as f:
             content = f.read()
-        await create_voice_srt_new3(name, content, path, participle_path)
+        max_attempts = 10  # 设置最大尝试次数
+        attempts = 0  # 初始化尝试次数计数器
+        while attempts < max_attempts:
+            try:
+                # 尝试执行可能出错的操作
+                await create_voice_srt_new3(name, content, path, participle_path)
+                break  # 如果成功，则跳出循环
+            except Exception as e:
+                # 捕获到异常，打印错误信息，并决定是否重试
+                print(f"尝试生成语音字幕时出错: {e}")
+                attempts += 1  # 增加尝试次数
+                await asyncio.sleep(10)  # 等待一段时间后重试，避免立即重试
+
+        if attempts == max_attempts:
+            raise Exception("尝试生成语音字幕失败次数过多，停止重试。")
     else:
         async with aiofiles.open(participle_path, "r", encoding="utf8") as file:
             lines = await file.readlines()

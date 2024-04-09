@@ -69,6 +69,10 @@ video:
   use_moviepy: true
   # 一次性合成 不用分段合成 视频效果更好 需要安装ffmpeg环境
   once: false
+  # 是否开启动画，只有once开启时候才会有动画
+  animation: true
+  # 动画幅度比例 最佳1.2
+  animation_speed: 1.2
 
 chatgpt:
   # ForwardKey

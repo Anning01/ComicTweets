@@ -1,6 +1,10 @@
 # ComicTweets
 自动化构建漫画推文，使用stable diffusion来生成图片
 
+# Video Effects
+[![Watch the video](https://img.youtube.com/vi/w7jC9KJBuQU/0.jpg)](https://youtu.be/w7jC9KJBuQU "Watch the video")
+
+
 # Installation and Running
 
 ## Windows 10/11 or Linux or macos
@@ -40,3 +44,9 @@ Type the key into the ForwardKey of chatgpt in config
 3. ~~moviepy 代码迁移到ffmpeg的原生命令，moviepy的最新版居然是2020年！！！ 已经没人更新了~~
 4. 代码结构优化，现在代码写的很乱，需要优化
 5. 新增ChatGPT 官方 API，因为没有key 只能使用国内的代理商，但是贵了1.5倍！！！
+
+# 联系我
+- Email: anningforchina@gmail.com
+- QQ群：100419879
+- QQ\V：864399407
+- 欢迎合作👏🏻
