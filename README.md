@@ -37,6 +37,6 @@ Type the key into the ForwardKey of chatgpt in config
 # 下一步开发打算
 1. ~~并发异步执行，现在都是同步执行，后面会让生产语音和生成图片的协程并行~~
 2. 人物形象图，现在人物都是让GPT理解上下文的人物，形象可能会有一点变化，后面考虑使用 Reference 或者 ip-adapter 生成人物形象图参考。
-3. moviepy 代码迁移到ffmpeg的原生命令，moviepy的最新版居然是2020年！！！ 已经没人更新了
+3. ~~moviepy 代码迁移到ffmpeg的原生命令，moviepy的最新版居然是2020年！！！ 已经没人更新了~~
 4. 代码结构优化，现在代码写的很乱，需要优化
 5. 新增ChatGPT 官方 API，因为没有key 只能使用国内的代理商，但是贵了1.5倍！！！
