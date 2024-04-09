@@ -1,3 +1,5 @@
+import asyncio
+
 from load_config import get_yaml_config
 
 config = get_yaml_config()
@@ -24,7 +26,7 @@ async def combine_strings(strings):
 
 
 async def participle(text):
-    PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!"]
+    PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!", "…"]
 
     async def clause():
         start = 0
@@ -37,7 +39,7 @@ async def participle(text):
                         i += 1
                 except IndexError:
                     pass
-                text_list.append(text[start:i])
+                text_list.append(text[start:i].strip())
                 start = i
             i += 1
         return text_list
@@ -48,7 +50,8 @@ async def participle(text):
 
 
 if __name__ == "__main__":
-    with open("./测试.txt", "r", encoding="utf-8") as f:
-        novel = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "")
-    with open("./测试txt.txt", "w", encoding="utf-8") as f:
-        f.writelines(participle(novel))
+    with open("./斗破苍穹.txt", "r", encoding="utf-8") as f:
+        novel = f.read().replace("\n", "").replace("\r", "").replace("\r\n", "").replace("\u2003", "")
+    with open("./斗破苍穹txt.txt", "w", encoding="utf-8") as f:
+        content = asyncio.run(participle(novel))
+        f.writelines(content)

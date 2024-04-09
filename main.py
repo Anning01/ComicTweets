@@ -7,15 +7,16 @@
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
 from concurrent.futures import ProcessPoolExecutor
 
 from aiofiles import os as aio_os
 import aiofiles
+
 from char2voice import create_voice_srt_new2
+from voice_caption import create_voice_srt_new3
 from check_path import check_command_installed, check_python_version
 from extract_role import extract_potential_names
-from load_config import get_yaml_config, print_tip, check_file_exists, get_file
+from load_config import get_yaml_config, print_tip, check_file_exists
 from participle import participle
 from prompt import generate_prompt
 from sd import Main as sd
@@ -24,6 +25,7 @@ from video_composition import Main as vc
 config = get_yaml_config()
 name = config["book"]["name"]
 memory = config["book"]["memory"]
+once = config["video"]["once"]
 
 if not name:
     raise Exception("请输入书名")
@@ -33,25 +35,29 @@ if not os.path.exists(f"{name}.txt"):
 
 async def voice_srt(participle_path, path):
     await print_tip("开始生成语音字幕")
-    async with aiofiles.open(participle_path, "r", encoding="utf8") as file:
-        lines = await file.readlines()
-        # 循环输出每一行内容
-        index = 1
-        for line in lines:
-            if line:
-                mp3_exists = await check_file_exists(os.path.join(path, f"{index}.mp3"))
-                srt_exists = await check_file_exists(os.path.join(path, f"{index}.srt"))
-                if memory and mp3_exists and srt_exists:
-                    await print_tip(f"使用缓存，读取第{index}段语音字幕")
-                else:
-                    await create_voice_srt_new2(index, line, path)
-                index += 1
+    if once:
+        with open(f'{name}.txt', 'r', encoding='utf-8') as f:
+            content = f.read()
+        await create_voice_srt_new3(name, content, path, participle_path)
+    else:
+        async with aiofiles.open(participle_path, "r", encoding="utf8") as file:
+            lines = await file.readlines()
+            # 循环输出每一行内容
+            index = 1
+            for line in lines:
+                if line:
+                    mp3_exists = await check_file_exists(os.path.join(path, f"{index}.mp3"))
+                    srt_exists = await check_file_exists(os.path.join(path, f"{index}.srt"))
+                    if memory and mp3_exists and srt_exists:
+                        await print_tip(f"使用缓存，读取第{index}段语音字幕")
+                    else:
+                        await create_voice_srt_new2(index, line, path)
+                    index += 1
 
 
 async def role(path):
     await print_tip("开始提取角色")
     role_path = os.path.join(path, f"{name}.txt")
-    print("提取角色")
     async with aiofiles.open(role_path, "r", encoding="utf8") as f:
         content = await f.read()
         novel_text = content.replace("\n", "").replace("\r", "").replace("\r\n", "")
@@ -71,53 +77,12 @@ async def role(path):
     # ToDo 做人物形象图
 
 
-# async def draw_picture(path):
-#     obj_path = os.path.join(path, f"{name}.json")
-#     is_exists = await check_file_exists(obj_path)
-#     while_count = 0
-#     while not is_exists:
-#         await print_tip("等待GPT生成提词器中，请稍等...")
-#         await asyncio.sleep(6)
-#         is_exists = await check_file_exists(obj_path)
-#         while_count += 1
-#         if while_count > 10:
-#             raise Exception("GPT一分钟未生成提示词，请检查网络")
-#     if while_count > 10:
-#         raise Exception("GPT一分钟未生成提示词，请检查网络")
-#
-#     await print_tip("开始异步生成生成图片")
-#
-#     content = await get_file(obj_path)
-#     obj_list = json.loads(content)
-#     content_length = len(obj_list)
-#     start_wait_time = datetime.now()
-#     for index, obj in enumerate(obj_list, start=1):
-#         await sd().draw_picture(obj, index, name)
-#     while True:
-#         content = await get_file(obj_path)
-#
-#         if content_length == len(json.loads(content)):
-#             # 文件未变化
-#             if datetime.now() - start_wait_time > timedelta(minutes=1):
-#                 # 超过1分钟无变化
-#                 await print_tip("已经将prompt全部执行完成，等待1分钟后未发现新的prompt，结束绘图。")
-#                 break  # 退出循环
-#             await asyncio.sleep(10)  # 短暂等待再次检查
-#             continue
-#         else:
-#             content = await get_file(obj_path)
-#             obj_list = json.loads(content)
-#             for index, obj in enumerate(obj_list, start=1):
-#                 await sd().draw_picture(obj, index, name)
-
 async def new_draw_picture(path):
     obj_path = os.path.join(path, f"{name}.json")
     is_exists = await check_file_exists(obj_path)
     if not is_exists:
         raise Exception(f"{name}.json文件不存在")
 
-    # content = await get_file(obj_path)
-    # obj_list = json.loads(content)
     with open(obj_path, "r", encoding="utf-8") as f:
         obj_list = json.load(f)
     for index, obj in enumerate(obj_list, start=1):
@@ -166,6 +131,7 @@ async def main():
     # await asyncio.gather(generate_prompt(path, path, name), draw_picture(path), future)
     await generate_prompt(path, path, name)
     await asyncio.gather(new_draw_picture(path), future)
+    # await asyncio.gather(new_draw_picture(path), voice_srt(participle_path, path))
 
     await print_tip("开始合成视频")
     picture_path_path = os.path.abspath(f"./images/{name}")

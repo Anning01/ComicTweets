@@ -1,10 +1,18 @@
-import asyncio
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+# @author:anning
+# @email:anningforchina@gmail.com
+# @time:2024/04/09 14:44
+# @file:voice_caption.py
+# 将图片和文字，字幕 一次性合成
 import os.path
 import re
+from datetime import datetime
+
 import aiofiles
 import edge_tts
 
-from load_config import get_yaml_config
+from load_config import get_yaml_config, check_file_exists
 
 config = get_yaml_config()
 limit = config["audio"]["limit"]
@@ -68,9 +76,9 @@ async def spilt_str2(s, t, k=limit):
 
             for _i in range(e):
                 if _i == e - 1:
-                    ss_valid.append(_ss[n_e * _i :])
+                    ss_valid.append(_ss[n_e * _i:])
                 else:
-                    ss_valid.append(_ss[n_e * _i : n_e * (_i + 1)])
+                    ss_valid.append(_ss[n_e * _i: n_e * (_i + 1)])
         else:
             ss_valid.append(_ss)
 
@@ -124,7 +132,18 @@ async def spilt_str2(s, t, k=limit):
     return line_srt
 
 
-async def load_srt_new(filename, flag=True):
+async def time_difference(time1, time2):
+    time_format = r"%H:%M:%S,%f"
+    time1 = datetime.strptime(time1, time_format)
+    time2 = datetime.strptime(time2, time_format)
+
+    # 计算时间差
+    delta = time2 - time1
+    time_diff = str(delta).replace(".", ",")[:11]
+    return time_diff
+
+
+async def load_srt_new(save_dir, name, filename, flag=True, section_path=None):
     time_format = r"(\d{2}:\d{2}:\d{2}),\d{3} --> (\d{2}:\d{2}:\d{2}),\d{3}"
 
     n = 0  # srt 文件总行数
@@ -137,7 +156,6 @@ async def load_srt_new(filename, flag=True):
         f_lines = await f3.readlines()
         for line in f_lines:
             line = line.strip("\n")
-
             n += 1
 
             # 写入新的数据
@@ -159,7 +177,6 @@ async def load_srt_new(filename, flag=True):
             # case2: 判断新的一行是不是时间段
             if re.match(time_format, line):
                 t_line_cur = line
-
                 # reset line_tmp
                 line_tmp = ""
                 count_tmp = 0
@@ -184,7 +201,30 @@ async def load_srt_new(filename, flag=True):
     for _line in new_srt:
         for _l in _line:
             srt.append(_l)
+    with open(section_path, 'r', encoding="utf-8") as f:
+        section_list = f.readlines()
+    section_time_list = []
+    index_ = 0
+    time_ = "00:00:00,000"
+    for si, section in enumerate(section_list):
+        if len(section_list) == si + 1:
+            # 最后这段不处理 默认使用剩余所有time
+            # section_time_list.append((section, srt[-1][0].split(" --> ")[0]))
+            break
+        content_ = await CustomSubMaker().remove_non_chinese_chars(section)
+        for i, v in enumerate(srt):
+            if i <= index_:
+                continue
+            if v[1] not in content_:
+                next_start_time = v[0].split(" --> ")[0]
+                diff = await time_difference(time_, next_start_time)
+                section_time_list.append(diff)
+                index_ = i
+                time_ = next_start_time
+                break
 
+    async with aiofiles.open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
+        await f3.write(str(section_time_list))
     return srt
 
 
@@ -198,8 +238,8 @@ async def save_srt(filename, srt_list):
             await f.write(info)
 
 
-async def srt_regen_new(f_srt, f_save, flag):
-    srt_list = await load_srt_new(f_srt, flag)
+async def srt_regen_new(save_dir, name, f_srt, f_save, flag, section_path):
+    srt_list = await load_srt_new(save_dir, name, f_srt, flag, section_path)
     await save_srt(f_save, srt_list)
 
 
@@ -208,7 +248,7 @@ class CustomSubMaker(edge_tts.SubMaker):
 
     async def generate_cn_subs(self, text):
 
-        PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!"]
+        PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!", "…"]
 
         def clause(self):
             start = 0
@@ -285,25 +325,38 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
                 f_out.write(line)
 
 
-async def create_voice_srt_new2(
-    index, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
+async def create_voice_srt_new3(
+        name, file_txt, save_dir, section_path, p_voice=role, p_rate=rate, p_volume=volume
 ):
-    mp3_name = f"{index}.mp3"
-    vtt_name = f"{index}.vtt"
-    srt_name = f"{index}.tmp.srt"
-    srt_name_final = f"{index}.srt"
+    mp3_name = f"{name}.mp3"
+    vtt_name = f"{name}.vtt"
+    srt_name = f"{name}.tmp.srt"
+    srt_name_final = f"{name}.srt"
 
     file_mp3 = os.path.join(save_dir, mp3_name)
+    exists = await check_file_exists(file_mp3)
+    if exists:
+        return
     file_vtt = os.path.join(save_dir, vtt_name)
     file_srt = os.path.join(save_dir, srt_name)
     file_srt_final = os.path.join(save_dir, srt_name_final)
-
     await edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
 
-    await srt_regen_new(file_srt, file_srt_final, False)
+    await srt_regen_new(save_dir, name, file_srt, file_srt_final, False, section_path)
 
     #  删除其他生成文件
     os.remove(file_vtt)
     os.remove(file_srt)
 
     return file_mp3, file_srt_final
+
+
+if __name__ == "__main__":
+    import asyncio
+    import os
+
+    with open("斗破苍穹.txt", 'r', encoding='utf-8') as f:
+        content = f.read()
+    asyncio.run(create_voice_srt_new3("斗破苍穹", content, "./", "斗破苍穹txt.txt"))
+
+

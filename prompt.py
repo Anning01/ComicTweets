@@ -116,7 +116,7 @@ async def translates(text, line_number, prompt_json_save_path):
             await print_tip(f"使用缓存：跳过第{line_number}段")
             return
     prompt = translate.main(text)
-    obj = {"prompt": prompt, "negative_prompt": ""}
+    obj = {"prompt": prompt, "negative_prompt": "nsfw,(low quality,normal quality,worst quality,jpeg artifacts),cropped,monochrome,lowres,low saturation,((watermark)),(white letters)"}
     write_to_json(obj, prompt_json_save_path)
 
 

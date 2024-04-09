@@ -67,6 +67,8 @@ video:
   position: 0.9
   # 使用moviepy或者ffmpeg合成视频
   use_moviepy: true
+  # 一次性合成 不用分段合成 视频效果更好 需要安装ffmpeg环境
+  once: false
 
 chatgpt:
   # ForwardKey

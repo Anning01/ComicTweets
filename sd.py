@@ -67,12 +67,11 @@ class Main:
             raise Exception(str(html))
         images = img_response.get("images", None)
         if not images:
-            raise Exception(
-                img_response.get(
-                    "errors",
-                    "Stable Diffusion 返回数据异常，请查看ip+端口是否匹配，是否开启。",
-                )
+            error = img_response.get(
+                "error",
+                "Stable Diffusion 返回数据异常，请查看ip+端口是否匹配，是否开启。",
             )
+            raise Exception(error)
         image_bytes = base64.b64decode(images[0])
         image = Image.open(io.BytesIO(image_bytes))
         # 图片存放
