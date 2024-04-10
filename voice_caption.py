@@ -333,7 +333,7 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
 
 # 合并文件夹下所有MP3文件为一个音频文件
 async def merge_bgm(bgm_folder):
-    with open('bgm_list.txt', 'w') as filelist:
+    with open('bgm_list.txt', 'w', encoding="utf-8") as filelist:
         for mp3_file in os.listdir(bgm_folder):
             if mp3_file.endswith('.mp3'):
                 filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
