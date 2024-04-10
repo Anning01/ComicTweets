@@ -266,7 +266,7 @@ class Main:
         out_path = os.path.join(file_path, f"out{name}.mp4")
 
         # 构建字体样式字符串，只包含颜色和大小
-        style = f"Fontsize={fontsize},PrimaryColour=&H{fontcolor}"
+        style = f"FontName={fontfile.split('.')[0]},Fontsize={fontsize},PrimaryColour=&H{fontcolor}"
 
         # 构建 FFmpeg 命令，不再设置字体文件路径
         if os.name == 'nt':
@@ -275,15 +275,13 @@ class Main:
             out_path = os.path.relpath(out_path, proj_path).replace("\\", "/")
             video_path = os.path.relpath(video_path, proj_path).replace("\\", "/")
             srt_path = os.path.relpath(srt_path, proj_path).replace("\\", "/")
-            cmd = f"""ffmpeg -i {video_path} -vf subtitles={srt_path}:force_style={style} -c:a copy {out_path}"""
-        else:
-            cmd = [
-                'ffmpeg',
-                '-i', video_path,
-                '-vf', f"subtitles='{srt_path}':force_style='{style}'",
-                '-c:a', 'copy',
-                out_path
-            ]
+        cmd = [
+            'ffmpeg',
+            '-i', video_path,
+            '-vf', f"subtitles='{srt_path}':force_style='{style}'",
+            '-c:a', 'copy',
+            out_path
+        ]
 
         # 执行命令
         subprocess.run(cmd, check=True)
