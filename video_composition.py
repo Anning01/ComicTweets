@@ -26,7 +26,7 @@ once = config["video"]["once"]
 animation = config["video"]["animation"]
 width = config["stable_diffusion"]["width"]
 height = config["stable_diffusion"]["height"]
-animation_speed = config["audio"]["animation_speed"]
+animation_speed = config["video"]["animation_speed"]
 
 if imagemagick_path:
     os.environ["IMAGEMAGICK_BINARY"] = rf"{imagemagick_path}"
