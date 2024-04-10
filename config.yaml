@@ -69,7 +69,7 @@ video:
   stroke_width: 1.2
   # 文字间距
   kerning: 1
-  # 字幕位置 越小越靠山 越大越靠下 0 - 1
+  # 字幕位置 越小越靠山 越大越靠下 0 - 1 开启ffmpeg后 6=上 10中 2下
   position: 0.9
   # 使用moviepy或者ffmpeg合成视频
   use_moviepy: true

@@ -6,6 +6,7 @@
 # @file:voice_caption.py
 # 将图片和文字，字幕 一次性合成
 import os.path
+import random
 import re
 from datetime import datetime
 import subprocess
@@ -333,10 +334,17 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
 
 # 合并文件夹下所有MP3文件为一个音频文件
 async def merge_bgm(bgm_folder):
+    mp3_files = [os.path.join(bgm_folder, mp3_file) for mp3_file in os.listdir(bgm_folder) if mp3_file.endswith('.mp3')]
+    random.shuffle(mp3_files)  # 随机化列表中元素的顺序
+
     with open('bgm_list.txt', 'w', encoding="utf-8") as filelist:
-        for mp3_file in os.listdir(bgm_folder):
-            if mp3_file.endswith('.mp3'):
-                filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
+        for mp3_file in mp3_files:
+            filelist.write(f"file '{mp3_file}'\n")
+
+    # with open('bgm_list.txt', 'w', encoding="utf-8") as filelist:
+    #     for mp3_file in os.listdir(bgm_folder):
+    #         if mp3_file.endswith('.mp3'):
+    #             filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
     subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'bgm_list.txt', '-c', 'copy', 'merged_bgm.mp3'], check=True)
     os.remove('bgm_list.txt')
 
