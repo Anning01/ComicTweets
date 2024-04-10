@@ -43,7 +43,7 @@ from moviepy.editor import (
 class Main:
 
     def merge_video(
-            self, picture_path_path: str, audio_path_path: str, name: str, file_path: str
+        self, picture_path_path: str, audio_path_path: str, name: str, file_path: str
     ):
         """
         :param picture_path_list: 图片路径列表
@@ -53,23 +53,26 @@ class Main:
         clips = []
 
         def extract_number(filename):
-            match = re.search(r'(\d+)', filename)
+            match = re.search(r"(\d+)", filename)
             if match:
                 return int(match.group(0))
             return 0  # 如果文件名中没有数字，则默认为 0
+
         picture_path_list = sorted(
             [
                 os.path.join(picture_path_path, name)
                 for name in os.listdir(picture_path_path)
                 if name.endswith(".png")
             ],
-            key=lambda x: extract_number(os.path.basename(x))
+            key=lambda x: extract_number(os.path.basename(x)),
         )
         if once:
             audio_path = os.path.join(audio_path_path, f"{name}.mp3")
             srt_path = os.path.join(audio_path_path, f"{name}.srt")
             time_file = os.path.join(audio_path_path, f"{name}time.txt")
-            self.disposable_synthesis(picture_path_list, audio_path, srt_path, time_file, file_path, name)
+            self.disposable_synthesis(
+                picture_path_list, audio_path, srt_path, time_file, file_path, name
+            )
         else:
             audio_path_list = sorted(
                 [
@@ -77,7 +80,7 @@ class Main:
                     for name in os.listdir(audio_path_path)
                     if name.endswith(".mp3")
                 ],
-                key=lambda x: extract_number(os.path.basename(x))
+                key=lambda x: extract_number(os.path.basename(x)),
             )
             srt_path_list = sorted(
                 [
@@ -85,7 +88,7 @@ class Main:
                     for name in os.listdir(audio_path_path)
                     if name.endswith(".srt")
                 ],
-                key=lambda x: extract_number(os.path.basename(x))
+                key=lambda x: extract_number(os.path.basename(x)),
             )
             if os.path.isfile(f"{file_path}/{name}.txt"):
                 os.remove(f"{file_path}/{name}.txt")
@@ -124,9 +127,7 @@ class Main:
                 clips.append(clip)
                 os.makedirs(file_path, exist_ok=True)
                 video_path = os.path.join(file_path, f"{index}.mp4")
-                clip.write_videofile(
-                    video_path, fps=24, audio_codec="aac"
-                )
+                clip.write_videofile(video_path, fps=24, audio_codec="aac")
                 if not use_moviepy:
                     self.create_srt(
                         video_path, srt_path_list[index - 1], file_path, name
@@ -144,8 +145,8 @@ class Main:
 
     def convert_time_string(self, time_str):
         # 分割小时、分钟、秒和毫秒
-        hours, minutes, seconds = time_str.split(':')
-        seconds, milliseconds = seconds.split(',')
+        hours, minutes, seconds = time_str.split(":")
+        seconds, milliseconds = seconds.split(",")
 
         # 将分割得到的字符串转换为数值
         hours = int(hours)
@@ -158,7 +159,9 @@ class Main:
 
         return total_seconds
 
-    def disposable_synthesis(self, picture_path_list, audio_path, srt_path, time_file, save_path, name):
+    def disposable_synthesis(
+        self, picture_path_list, audio_path, srt_path, time_file, save_path, name
+    ):
         # 一次性合成图片视频字幕
         """
         ffmpeg -f concat -safe 0 -i filelist.txt -i audio.mp3 -vf "subtitles=subtitle_file.srt" -vsync vfr -pix_fmt yuv420p output.mp4
@@ -172,36 +175,78 @@ class Main:
         out_path = os.path.join(save_path, f"{name}.mp4")
 
         if animation:
-            self.disposable_synthesis_animation(picture_path_list, time_list, audio_path, save_path, out_path)
+            self.disposable_synthesis_animation(
+                picture_path_list, time_list, audio_path, save_path, out_path
+            )
         else:
             file_path = os.path.join(save_path, "filelist.txt")
             with open(file_path, "w", encoding="utf-8") as f:
                 for index, picture_path in enumerate(picture_path_list):
                     f.write(f"file '{picture_path}'\n")
                     if index < len(time_list):
-                        f.write(f"duration {self.convert_time_string(time_list[index])}\n")
+                        f.write(
+                            f"duration {self.convert_time_string(time_list[index])}\n"
+                        )
             cmd = [
                 "ffmpeg",
-                "-f", "concat",
-                "-safe", "0",
-                "-i", file_path,
-                "-i", audio_path,
-                "-vsync", "cfr",
-                "-pix_fmt", "yuv420p",
-                out_path
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                file_path,
+                "-i",
+                audio_path,
+                "-vsync",
+                "cfr",
+                "-pix_fmt",
+                "yuv420p",
+                out_path,
             ]
             subprocess.run(cmd, check=True)
 
         self.create_srt(out_path, srt_path, save_path, name)
 
-    def create_animated_segment(self, image_path, duration, output_path, index, multiple, action):
+    def create_animated_segment(
+        self, image_path, duration, output_path, index, multiple, action
+    ):
         initial_zoom = 1.0
         duration = self.convert_time_string(duration)
         zoom_steps = (multiple - initial_zoom) / (25 * duration)
         # 取余后三位
         # zoom_steps = round(zoom_steps, 3)
         if action == "shrink":
-            scale = f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"+str(duration)+f":s={width}x{height}"
+            scale = (
+                f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"
+                + str(duration)
+                + f":s={width}x{height}"
+            )
+        elif action == "left_move":
+            scale = (
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,-1),(iw-iw/zoom)/2,x+{multiple*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                + str(duration)
+                + f":s={width}x{height}"
+            )
+        elif action == "right_move":
+            scale = (
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw/zoom)/2,x-{multiple*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                + str(duration)
+                + f":s={width}x{height}"
+            )
+        elif action == "up_move":
+            """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+2)':d=150"  1.mp4"""
+            scale = (
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+{multiple*10})':d=25*"
+                + str(duration)
+                + f":s={width}x{height}"
+            )
+        elif action == "down_move":
+            """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-2)':d=150"  1.mp4"""
+            scale = (
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-{multiple*10})':d=25*"
+                + str(duration)
+                + f":s={width}x{height}"
+            )
         else:
             # scale = f"scale=-2:ih*10,zoompan=z='zoom+{zoom_steps}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*{duration}:s={width}x{height}:fps=25"
             scale = f"scale=-2:ih*10,zoompan=z='min(zoom+{zoom_steps},{multiple})*if(gte(zoom,1),1,0)+if(lt(zoom,1),1,0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*{duration}:s={width}x{height}"
@@ -209,15 +254,23 @@ class Main:
         cmd = [
             "ffmpeg",
             "-y",  # 覆盖输出文件
-            "-r", "25",  # 帧率
-            "-loop", "1",  # 循环输入图像
-            "-t", str(duration),  # 输出视频片段的持续时间
-            "-i", image_path,  # 输入图像
-            "-filter_complex", scale,
-            "-vframes", str(int(25 * duration)),
-            "-c:v", "libx264",  # 视频编解码器
-            "-pix_fmt", "yuv420p",  # 像素格式
-            f"{output_path}/animated_segment_{index}.mp4"  # 输出路径
+            "-r",
+            "25",  # 帧率
+            "-loop",
+            "1",  # 循环输入图像
+            "-t",
+            str(duration),  # 输出视频片段的持续时间
+            "-i",
+            image_path,  # 输入图像
+            "-filter_complex",
+            scale,
+            "-vframes",
+            str(int(25 * duration)),
+            "-c:v",
+            "libx264",  # 视频编解码器
+            "-pix_fmt",
+            "yuv420p",  # 像素格式
+            f"{output_path}/animated_segment_{index}.mp4",  # 输出路径
         ]
         subprocess.run(cmd, check=True)
 
@@ -229,25 +282,42 @@ class Main:
         cmd = [
             "ffmpeg",
             "-y",  # Overwrite output files without asking
-            "-f", "concat",
-            "-safe", "0",
-            "-i", "temp_list.txt",
-            "-i", audio_path,
-            "-vsync", "cfr",
-            "-pix_fmt", "yuv420p",
-            output_video
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            "temp_list.txt",
+            "-i",
+            audio_path,
+            "-vsync",
+            "cfr",
+            "-pix_fmt",
+            "yuv420p",
+            output_video,
         ]
         subprocess.run(cmd, check=True)
 
-    def disposable_synthesis_animation(self, picture_path_list, durations, audio_path, save_path, out_path):
+    def disposable_synthesis_animation(
+        self, picture_path_list, durations, audio_path, save_path, out_path
+    ):
         if os.path.exists(out_path):
             return
         video_list = []
-        animations = ["shrink", "magnify"]
-        for index, (image_path, duration) in enumerate(zip(picture_path_list, durations)):
+        animations = ["shrink", "magnify", "left_move", "right_move", "up_move", "down_move"]
+        for index, (image_path, duration) in enumerate(
+            zip(picture_path_list, durations)
+        ):
             output_path = os.path.join(save_path, f"animated_segment_{index}.mp4")
             selected_animation = random.choice(animations)
-            self.create_animated_segment(image_path, duration, save_path, index, animation_speed, selected_animation)
+            self.create_animated_segment(
+                image_path,
+                duration,
+                save_path,
+                index,
+                animation_speed,
+                selected_animation,
+            )
             video_list.append(output_path)
 
         self.concat_videos(video_list, audio_path, out_path)
@@ -269,18 +339,21 @@ class Main:
         style = f"FontName={fontfile.split('.')[0]},Fontsize={fontsize},PrimaryColour=&H{fontcolor}"
 
         # 构建 FFmpeg 命令，不再设置字体文件路径
-        if os.name == 'nt':
+        if os.name == "nt":
             # 由于绝对路径下win会报错 所以转换成相对路径
             proj_path = os.path.abspath("./")
             out_path = os.path.relpath(out_path, proj_path).replace("\\", "/")
             video_path = os.path.relpath(video_path, proj_path).replace("\\", "/")
             srt_path = os.path.relpath(srt_path, proj_path).replace("\\", "/")
         cmd = [
-            'ffmpeg',
-            '-i', video_path,
-            '-vf', f"subtitles='{srt_path}':force_style='{style}'",
-            '-c:a', 'copy',
-            out_path
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            f"subtitles='{srt_path}':force_style='{style}'",
+            "-c:a",
+            "copy",
+            out_path,
         ]
 
         # 执行命令
@@ -307,11 +380,20 @@ class Main:
     def mm_merge_video(self, video_path, name):
         out_path = os.path.join(video_path, f"{name}.mp4")
         inputs_path = os.path.join(video_path, f"{name}.txt")
-        subprocess.run([
-            'ffmpeg', '-f', 'concat', '-safe', '0', '-i',
-            f'{inputs_path}', '-c', 'copy',
-            f'{out_path}'
-        ])
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                f"{inputs_path}",
+                "-c",
+                "copy",
+                f"{out_path}",
+            ]
+        )
 
     def srt_time_to_seconds(self, time_str):
         """
