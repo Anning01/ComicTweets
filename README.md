@@ -2,7 +2,7 @@
 自动化构建漫画推文，使用stable diffusion来生成图片
 
 # Video Effects
-[![Watch the video](https://img.youtube.com/vi/w7jC9KJBuQU/0.jpg)](https://youtu.be/w7jC9KJBuQU "Watch the video")
+[![Watch the video](https://img.youtube.com/vi/ZcZbA1lVa34/0.jpg)](https://youtu.be/ZcZbA1lVa34 "Watch the video")
 
 
 # Installation and Running
