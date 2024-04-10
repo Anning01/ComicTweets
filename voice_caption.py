@@ -357,7 +357,7 @@ async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
 
     # 如果需要，循环BGM
     if loop_count > 1:
-        with open('looped_bgm_list.txt', 'w') as loop_file:
+        with open('looped_bgm_list.txt', 'w', encoding="utf-8") as loop_file:
             for _ in range(loop_count):
                 loop_file.write(f"file '{bgm_file}'\n")
         subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'looped_bgm_list.txt', '-c', 'copy', 'looped_bgm.mp3'], check=True)
