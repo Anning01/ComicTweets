@@ -183,7 +183,7 @@ class Main:
             with open(file_path, "w", encoding="utf-8") as f:
                 for index, picture_path in enumerate(picture_path_list):
                     f.write(f"file '{picture_path}'\n")
-                    if index < len(time_list):
+                    if index+1 < len(time_list):
                         f.write(
                             f"duration {self.convert_time_string(time_list[index])}\n"
                         )
@@ -213,8 +213,8 @@ class Main:
         initial_zoom = 1.0
         duration = self.convert_time_string(duration)
         zoom_steps = (multiple - initial_zoom) / (25 * duration)
-        # 取余后三位
-        # zoom_steps = round(zoom_steps, 3)
+        l_r_move = (width * multiple - width - 25) / (25 * duration)
+        u_d_move = (height * multiple - height - 25 - 25) / (25 * duration)
         if action == "shrink":
             scale = (
                 f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"
@@ -223,27 +223,27 @@ class Main:
             )
         elif action == "left_move":
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,-1),(iw-iw/zoom)/2,x+{multiple*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,-1),(iw-iw/zoom)/2,x+{l_r_move*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
                 + str(duration)
                 + f":s={width}x{height}"
             )
         elif action == "right_move":
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw/zoom)/2,x-{multiple*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw/zoom)/2,x-{l_r_move*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
                 + str(duration)
                 + f":s={width}x{height}"
             )
         elif action == "up_move":
             """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+2)':d=150"  1.mp4"""
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+{multiple*10})':d=25*"
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+{u_d_move*10})':d=25*"
                 + str(duration)
                 + f":s={width}x{height}"
             )
         elif action == "down_move":
             """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-2)':d=150"  1.mp4"""
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-{multiple*10})':d=25*"
+                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-{u_d_move*10})':d=25*"
                 + str(duration)
                 + f":s={width}x{height}"
             )

@@ -209,7 +209,9 @@ async def load_srt_new(save_dir, name, filename, flag=True, section_path=None):
     for si, section in enumerate(section_list):
         if len(section_list) == si + 1:
             # 最后这段不处理 默认使用剩余所有time
-            # section_time_list.append((section, srt[-1][0].split(" --> ")[0]))
+            next_start_time = srt[-1][0].split(" --> ")[1]
+            diff = await time_difference(time_, next_start_time)
+            section_time_list.append(diff)
             break
         content_ = await CustomSubMaker().remove_non_chinese_chars(section)
         for i, v in enumerate(srt):
