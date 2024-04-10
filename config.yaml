@@ -16,6 +16,12 @@ audio:
   rate: +30%
   # 音量
   volume: +100%
+  # 是否开启bgm 开启bgm 项目下要有一个bgm的目录 
+  bgm: true
+  # 主音频分贝db
+  main_db: 0
+  # 背景音频分贝db
+  bgm_db: -20
 
 # 分词
 potential:

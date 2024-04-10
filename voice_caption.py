@@ -8,6 +8,7 @@
 import os.path
 import re
 from datetime import datetime
+import subprocess
 
 import aiofiles
 import edge_tts
@@ -19,6 +20,9 @@ limit = config["audio"]["limit"]
 role = config["audio"]["role"]
 rate = config["audio"]["rate"]
 volume = config["audio"]["volume"]
+bgm = config["audio"]["bgm"]
+main_db = config["audio"]["main_db"]
+bgm_db = config["audio"]["bgm_db"]
 
 
 async def spilt_str2(s, t, k=limit):
@@ -327,6 +331,61 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
                 f_out.write(line)
 
 
+# 合并文件夹下所有MP3文件为一个音频文件
+async def merge_bgm(bgm_folder):
+    with open('bgm_list.txt', 'w') as filelist:
+        for mp3_file in os.listdir(bgm_folder):
+            if mp3_file.endswith('.mp3'):
+                filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
+    subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'bgm_list.txt', '-c', 'copy', 'merged_bgm.mp3'], check=True)
+    os.remove('bgm_list.txt')
+
+# 获取媒体文件长度
+async def get_media_length(file_path):
+    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path], stdout=subprocess.PIPE, text=True)
+    return float(result.stdout)
+
+# 循环BGM以匹配主音轨长度，然后与主音轨混合
+async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
+    await merge_bgm(bgm_file)
+    main_length = await get_media_length(main_audio)
+    bgm_length = await get_media_length(bgm_file)
+    main_volume=f'{main_db}dB'
+    bgm_volume=f'{bgm_db}dB'
+    # 计算BGM需要循环的次数
+    loop_count = int(main_length // bgm_length) + 1 if bgm_length < main_length else 1
+
+    # 如果需要，循环BGM
+    if loop_count > 1:
+        with open('looped_bgm_list.txt', 'w') as loop_file:
+            for _ in range(loop_count):
+                loop_file.write(f"file '{bgm_file}'\n")
+        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'looped_bgm_list.txt', '-c', 'copy', 'looped_bgm.mp3'], check=True)
+        looped_bgm = 'looped_bgm.mp3'
+        os.remove('looped_bgm_list.txt')
+    else:
+        looped_bgm = bgm_file
+
+    # 转换循环后的BGM为单声道，采样率调整为24kHz
+    subprocess.run(['ffmpeg', '-i', looped_bgm, '-ac', '1', '-ar', '24000', 'bgm_converted.mp3'], check=True)
+
+    output_file = os.path.join(save_dir, "out.mp3")
+    # 混合主音轨和已转换的BGM
+    subprocess.run([
+        'ffmpeg', '-i', main_audio, '-i', 'bgm_converted.mp3',
+        '-filter_complex',
+        f"[0:a]aformat=sample_rates=24000:channel_layouts=mono,volume={main_volume}[a0];[1:a]aformat=sample_rates=24000:channel_layouts=mono,volume={bgm_volume}[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
+        '-map', '[aout]', '-ac', '1', '-ar', '24000', '-y', output_file
+    ], check=True)
+
+    # 清理临时文件
+    os.remove('merged_bgm.mp3')
+    os.remove('bgm_converted.mp3')
+    if loop_count > 1:
+        os.remove('looped_bgm.mp3')
+    os.replace(output_file, main_audio)
+
+
 async def create_voice_srt_new3(
         name, file_txt, save_dir, section_path, p_voice=role, p_rate=rate, p_volume=volume
 ):
@@ -351,6 +410,10 @@ async def create_voice_srt_new3(
     #  删除其他生成文件
     os.remove(file_vtt)
     os.remove(file_srt)
+
+    if bgm:
+        # 如果使用bgm
+        await mix_main_and_bgm(file_mp3, 'bgm', save_dir)
 
     return file_mp3, file_srt_final
 
