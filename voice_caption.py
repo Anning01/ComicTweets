@@ -347,7 +347,7 @@ async def get_media_length(file_path):
 
 # 循环BGM以匹配主音轨长度，然后与主音轨混合
 async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
-    await merge_bgm(bgm_file)
+    await merge_bgm("bgm")
     main_length = await get_media_length(main_audio)
     bgm_length = await get_media_length(bgm_file)
     main_volume=f'{main_db}dB'
@@ -413,7 +413,7 @@ async def create_voice_srt_new3(
 
     if bgm:
         # 如果使用bgm
-        await mix_main_and_bgm(file_mp3, 'bgm', save_dir)
+        await mix_main_and_bgm(file_mp3, "merged_bgm.mp3", save_dir)
 
     return file_mp3, file_srt_final
 
