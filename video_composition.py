@@ -222,7 +222,7 @@ class Main:
         subprocess.run(cmd, check=True)
 
     def concat_videos(self, video_list, audio_path, output_video):
-        with open("temp_list.txt", "w") as f:
+        with open("temp_list.txt", "w", encoding="utf-8") as f:
             for video in video_list:
                 f.write(f"file '{video}'\n")
 
@@ -245,7 +245,7 @@ class Main:
         video_list = []
         animations = ["shrink", "magnify"]
         for index, (image_path, duration) in enumerate(zip(picture_path_list, durations)):
-            output_path = f"{save_path}/animated_segment_{index}.mp4"
+            output_path = os.path.join(save_path, f"animated_segment_{index}.mp4")
             selected_animation = random.choice(animations)
             self.create_animated_segment(image_path, duration, save_path, index, animation_speed, selected_animation)
             video_list.append(output_path)
