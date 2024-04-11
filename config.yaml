@@ -10,6 +10,8 @@ batch:
   source_path:
   # 输出文件目录
   output_path:
+  # 尾部视频拼接路径
+  ending_splice_path:
 # 音频
 audio:
   # 每行的字数限制
