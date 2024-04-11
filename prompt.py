@@ -1,5 +1,4 @@
 import json
-import json
 import os
 
 import aiofiles
@@ -134,51 +133,6 @@ async def generate_prompt(path, save_path, name):
                     await translates(line, line_number, prompt_json_save_path)
                 else:
                     await process_line(line, line_number, prompt_json_save_path, messages_save_path, name)
-
-    # async with aiofiles.open(f"{path}/{name}.txt", "r", encoding="utf8") as file:
-    #     # 初始化行数计数器
-    #     line_number = 0
-    #     lines = await file.readlines()
-    #     messages = []
-    #     # 循环输出每一行内容
-    #     prompt_json_save_path = os.path.join(save_path, f"{name}.json")
-    #     for line in lines:
-    #         if line:
-    #             line_number += 1
-    #             await print_tip(f"正在处理第{line_number}段")
-    #             is_exists = await check_file_exists(prompt_json_save_path)
-    #             if memory and is_exists:
-    #                 with open(prompt_json_save_path, "r", encoding="utf-8") as file:
-    #                     prompt_data = json.load(file)
-    #                 if line_number <= len(prompt_data):
-    #                     await print_tip(f"使用缓存：跳过第{line_number}段")
-    #                     continue
-    #                 else:
-    #                     async with aiofiles.open(
-    #                         f"{save_path}/{name}messages.json", "r", encoding="utf-8"
-    #                     ) as f:
-    #                         content = await f.read()
-    #                         messages = json.loads(content)
-    #             text = f"第{line_number}段：" + line.strip()
-    #             if line_number == 1:
-    #                 with open(f"{name}prompt.txt", "r", encoding="utf8") as f:
-    #                     messages = [
-    #                         {
-    #                             "role": "system",
-    #                             "content": f.read(),
-    #                         }
-    #                     ]
-
-    #             result, message = await Main().prompt_generation_chatgpt(text, messages)
-    #             prompt, negative_prompt = extract_str(message)
-    #             write_to_json(
-    #                 {"prompt": prompt, "negative_prompt": negative_prompt},
-    #                 prompt_json_save_path,
-    #             )
-    #             messages = result + [message]
-    #             with open(f"{save_path}/{name}messages.json", "w") as f:
-    #                 f.write(json.dumps(messages))
-
 
 if __name__ == "__main__":
     generate_prompt()

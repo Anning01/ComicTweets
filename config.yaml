@@ -4,7 +4,12 @@ book:
   name:
   # 是否开启记忆，意外退出重新启动从上次意外退出的地方开始执行
   memory: true
-
+# 批量文件处理 使用mass_production.py 文件
+batch:
+  # 资源文件目录
+  source_path:
+  # 输出文件目录
+  output_path:
 # 音频
 audio:
   # 每行的字数限制

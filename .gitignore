@@ -166,3 +166,5 @@ local_config.yaml
 local_stable_diffusion.json
 *.txt
 !prompt.txt
+
+bgm

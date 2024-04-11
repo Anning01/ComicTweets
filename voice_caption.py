@@ -14,7 +14,8 @@ import subprocess
 import aiofiles
 import edge_tts
 
-from load_config import get_yaml_config, check_file_exists
+from char2voice import create_voice_srt_new2
+from load_config import get_yaml_config, check_file_exists, print_tip
 
 config = get_yaml_config()
 limit = config["audio"]["limit"]
@@ -24,6 +25,8 @@ volume = config["audio"]["volume"]
 bgm = config["audio"]["bgm"]
 main_db = config["audio"]["main_db"]
 bgm_db = config["audio"]["bgm_db"]
+once = config["video"]["once"]
+memory = config["book"]["memory"]
 
 
 async def spilt_str2(s, t, k=limit):
@@ -148,7 +151,7 @@ async def time_difference(time1, time2):
     return time_diff
 
 
-async def load_srt_new(save_dir, name, filename, flag=True, section_path=None):
+async def load_srt_new(filename, flag=True):
     time_format = r"(\d{2}:\d{2}:\d{2}),\d{3} --> (\d{2}:\d{2}:\d{2}),\d{3}"
 
     n = 0  # srt 文件总行数
@@ -206,32 +209,6 @@ async def load_srt_new(save_dir, name, filename, flag=True, section_path=None):
     for _line in new_srt:
         for _l in _line:
             srt.append(_l)
-    with open(section_path, 'r', encoding="utf-8") as f:
-        section_list = f.readlines()
-    section_time_list = []
-    index_ = 0
-    time_ = "00:00:00,000"
-    for si, section in enumerate(section_list):
-        if len(section_list) == si + 1:
-            # 最后这段不处理 默认使用剩余所有time
-            next_start_time = srt[-1][0].split(" --> ")[1]
-            diff = await time_difference(time_, next_start_time)
-            section_time_list.append(diff)
-            break
-        content_ = await CustomSubMaker().remove_non_chinese_chars(section)
-        for i, v in enumerate(srt):
-            if i <= index_:
-                continue
-            if v[1] not in content_:
-                next_start_time = v[0].split(" --> ")[0]
-                diff = await time_difference(time_, next_start_time)
-                section_time_list.append(diff)
-                index_ = i
-                time_ = next_start_time
-                break
-
-    async with aiofiles.open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
-        await f3.write(str(section_time_list))
     return srt
 
 
@@ -245,8 +222,8 @@ async def save_srt(filename, srt_list):
             await f.write(info)
 
 
-async def srt_regen_new(save_dir, name, f_srt, f_save, flag, section_path):
-    srt_list = await load_srt_new(save_dir, name, f_srt, flag, section_path)
+async def srt_regen_new(f_srt, f_save, flag):
+    srt_list = await load_srt_new(f_srt, flag)
     await save_srt(f_save, srt_list)
 
 
@@ -295,7 +272,8 @@ class CustomSubMaker(edge_tts.SubMaker):
 
     async def remove_non_chinese_chars(self, text):
         # 使用正则表达式匹配非中文字符和非数字
-        pattern = re.compile(r"[^\u4e00-\u9fff0-9]+")
+        # pattern = re.compile(r"[^\u4e00-\u9fff0-9]+")
+        pattern = re.compile(r"[^\u4e00-\u9fffA-Za-z0-9]+")
         # 使用空字符串替换匹配到的非中文字符和非数字
         cleaned_text = re.sub(pattern, "", text)
         return cleaned_text
@@ -318,6 +296,7 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
 
     async with aiofiles.open(f_vtt, "w", encoding="utf-8") as file:
         content_to_write = await sub_maker.generate_cn_subs(content)
+        # content_to_write = sub_maker.generate_subs()
         await file.write(content_to_write)
 
     # vtt -》 srt
@@ -345,21 +324,26 @@ async def merge_bgm(bgm_folder):
     #     for mp3_file in os.listdir(bgm_folder):
     #         if mp3_file.endswith('.mp3'):
     #             filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
-    subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'bgm_list.txt', '-c', 'copy', 'merged_bgm.mp3'], check=True)
+    subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'bgm_list.txt', '-c', 'copy', 'merged_bgm.mp3'],
+                   check=True)
     os.remove('bgm_list.txt')
+
 
 # 获取媒体文件长度
 async def get_media_length(file_path):
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path], stdout=subprocess.PIPE, text=True)
+    result = subprocess.run(
+        ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1',
+         file_path], stdout=subprocess.PIPE, text=True)
     return float(result.stdout)
+
 
 # 循环BGM以匹配主音轨长度，然后与主音轨混合
 async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
     await merge_bgm("bgm")
     main_length = await get_media_length(main_audio)
     bgm_length = await get_media_length(bgm_file)
-    main_volume=f'{main_db}dB'
-    bgm_volume=f'{bgm_db}dB'
+    main_volume = f'{main_db}dB'
+    bgm_volume = f'{bgm_db}dB'
     # 计算BGM需要循环的次数
     loop_count = int(main_length // bgm_length) + 1 if bgm_length < main_length else 1
 
@@ -368,7 +352,9 @@ async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
         with open('looped_bgm_list.txt', 'w', encoding="utf-8") as loop_file:
             for _ in range(loop_count):
                 loop_file.write(f"file '{bgm_file}'\n")
-        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'looped_bgm_list.txt', '-c', 'copy', 'looped_bgm.mp3'], check=True)
+        subprocess.run(
+            ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'looped_bgm_list.txt', '-c', 'copy', 'looped_bgm.mp3'],
+            check=True)
         looped_bgm = 'looped_bgm.mp3'
         os.remove('looped_bgm_list.txt')
     else:
@@ -394,8 +380,61 @@ async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
     os.replace(output_file, main_audio)
 
 
+async def picture_processing_time(filename, section_path, save_dir, name):
+    subtitles = []  # 存储最终结果的列表
+    text = []  # 临时存储当前字幕块的文本行
+    timecode = None  # 初始化时间码变量
+
+    with open(filename, 'r', encoding='utf-8') as file:
+        for line in file:
+            line = line.strip()  # 移除行首尾的空白字符
+
+            if line.isdigit():  # 跳过字幕编号行
+                continue
+
+            if '-->' in line:  # 检测时间码行
+                if text:  # 如果前一个字幕块的文本已经读取，存储前一个字幕块
+                    subtitles.append((timecode, ' '.join(text)))
+                    text = []  # 重置文本列表为下一个字幕块做准备
+                timecode = line  # 更新时间码
+
+            elif line:  # 非空行即为字幕文本行
+                text.append(line)
+
+            # 无需处理空行，因为它们在这个逻辑中不起作用
+
+        # 添加文件末尾的最后一个字幕块（如果有）
+        if text:
+            subtitles.append((timecode, ' '.join(text)))
+    with open(section_path, 'r', encoding="utf-8") as f:
+        section_list = f.readlines()
+    section_time_list = []
+    index_ = 0
+    time_ = "00:00:00,000"
+    for si, section in enumerate(section_list):
+        if len(section_list) == si + 1:
+            # 最后这段不处理 默认使用剩余所有time
+            next_start_time = subtitles[-1][0].split(" --> ")[1]
+            diff = await time_difference(time_, next_start_time)
+            section_time_list.append(diff)
+            break
+        content_ = await CustomSubMaker().remove_non_chinese_chars(section)
+        for i, v in enumerate(subtitles):
+            if i <= index_:
+                continue
+            if v[1] not in content_:
+                next_start_time = v[0].split(" --> ")[0]
+                diff = await time_difference(time_, next_start_time)
+                section_time_list.append(diff)
+                index_ = i
+                time_ = next_start_time
+                break
+    with open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
+        f3.write(str(section_time_list))
+
+
 async def create_voice_srt_new3(
-        name, file_txt, save_dir, section_path, p_voice=role, p_rate=rate, p_volume=volume
+        name, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
 ):
     mp3_name = f"{name}.mp3"
     vtt_name = f"{name}.vtt"
@@ -413,8 +452,9 @@ async def create_voice_srt_new3(
         return
     await edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
 
-    await srt_regen_new(save_dir, name, file_srt, file_srt_final, False, section_path)
+    await srt_regen_new(file_srt, file_srt_final, False)
 
+    await picture_processing_time(file_srt_final, os.path.join(save_dir, f"{name}.txt"), save_dir, name)
     #  删除其他生成文件
     os.remove(file_vtt)
     os.remove(file_srt)
@@ -426,12 +466,52 @@ async def create_voice_srt_new3(
     return file_mp3, file_srt_final
 
 
+async def voice_srt(participle_path, path, name_path, name):
+    await print_tip("开始生成语音字幕")
+    if once:
+        with open(name_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        max_attempts = 10  # 设置最大尝试次数
+        attempts = 0  # 初始化尝试次数计数器
+        while attempts < max_attempts:
+            try:
+                # 尝试执行可能出错的操作
+                await create_voice_srt_new3(name, content, path)
+                break  # 如果成功，则跳出循环
+            except Exception as e:
+                # 捕获到异常，打印错误信息，并决定是否重试
+                print(f"尝试生成语音字幕时出错: {e}")
+                attempts += 1  # 增加尝试次数
+                await asyncio.sleep(10)  # 等待一段时间后重试，避免立即重试
+
+        if attempts == max_attempts:
+            raise Exception("尝试生成语音字幕失败次数过多，停止重试。")
+    else:
+        async with aiofiles.open(participle_path, "r", encoding="utf8") as file:
+            lines = await file.readlines()
+            # 循环输出每一行内容
+            index = 1
+            for line in lines:
+                if line:
+                    mp3_exists = await check_file_exists(os.path.join(path, f"{index}.mp3"))
+                    srt_exists = await check_file_exists(os.path.join(path, f"{index}.srt"))
+                    if memory and mp3_exists and srt_exists:
+                        await print_tip(f"使用缓存，读取第{index}段语音字幕")
+                    else:
+                        await create_voice_srt_new2(index, line, path)
+                    index += 1
+
+
 if __name__ == "__main__":
     import asyncio
     import os
 
-    with open("斗破苍穹.txt", 'r', encoding='utf-8') as f:
-        content = f.read()
-    asyncio.run(create_voice_srt_new3("斗破苍穹", content, "./", "斗破苍穹txt.txt"))
-
-
+    name = "残忍冷血大佬被傻妻抱怀里了第六到十章"
+    save_dir = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章"
+    with open("残忍冷血大佬被傻妻抱怀里了第六到十章.txt", "r", encoding="utf-8") as f:
+        section_list = f.read()
+    asyncio.run(create_voice_srt_new3(name, section_list, save_dir))
+    # filename = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章/残忍冷血大佬被傻妻抱怀里了第六到十章.srt"
+    # section_path = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章/残忍冷血大佬被傻妻抱怀里了第六到十章.txt"
+    # a = asyncio.run(load_srt_new(save_dir, name, filename, False, section_path))
+    # a = asyncio.run(picture_processing_time(filename, section_path, save_dir, name))

@@ -1,10 +1,15 @@
 import asyncio
+import os
 
-from load_config import get_yaml_config
+from load_config import get_yaml_config, print_tip, check_file_exists
+
+import aiofiles
+from aiofiles import os as aio_os
 
 config = get_yaml_config()
 min_words = config["potential"]["min_words"]
 max_words = config["potential"]["max_words"]
+memory = config["book"]["memory"]
 
 
 # 根据小说文本进行分词
@@ -47,6 +52,23 @@ async def participle(text):
     text_list = await clause()
     result = await combine_strings(text_list)
     return result
+
+
+async def main(name_path, path, participle_path):
+    await print_tip("正在分词")
+
+    async with aiofiles.open(name_path, "r", encoding="utf-8") as f:
+        content = await f.read()
+        novel = content.replace("\n", "").replace("\r", "").replace("\r\n", "").replace("\u2003", "")
+    await aio_os.makedirs(path, exist_ok=True)
+    is_exists = await check_file_exists(participle_path)
+    if memory and is_exists:
+        await print_tip("读取缓存分词")
+    else:
+        async with aiofiles.open(participle_path, "w", encoding="utf-8") as f:
+            participles = await participle(novel)
+            await f.writelines(participles)
+    await print_tip("分词完成")
 
 
 if __name__ == "__main__":

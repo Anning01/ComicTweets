@@ -144,19 +144,30 @@ class Main:
                 self.mm_merge_video(file_path, name)
 
     def convert_time_string(self, time_str):
-        # 分割小时、分钟、秒和毫秒
-        hours, minutes, seconds = time_str.split(":")
-        seconds, milliseconds = seconds.split(",")
-
-        # 将分割得到的字符串转换为数值
-        hours = int(hours)
-        minutes = int(minutes)
-        seconds = int(seconds)
-        milliseconds = int(milliseconds)
-
-        # 将时间转换为秒
-        total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
-
+        try:
+            # Split the string by colon
+            time_parts = time_str.split(":")
+            
+            # If milliseconds are included, split them by the comma
+            if ',' in time_parts[-1]:
+                seconds, milliseconds = time_parts[-1].split(",")
+            else:
+                seconds = time_parts[-1]
+                milliseconds = '0'  # No milliseconds present, default to 0
+            
+            # Convert each part to an integer
+            hours = int(time_parts[0])
+            minutes = int(time_parts[1])
+            seconds = int(seconds)
+            milliseconds = int(milliseconds)
+            
+            # Calculate total seconds
+            total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
+        except ValueError as e:
+            # Return an error message if the input format is incorrect
+            return f"Error: {str(e)}"
+    
+        # Return the total seconds
         return total_seconds
 
     def disposable_synthesis(
