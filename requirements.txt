@@ -7,3 +7,4 @@ moviepy
 pyyaml
 aiofiles
 alibabacloud-alimt20181012
+pillow==9.5
