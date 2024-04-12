@@ -35,7 +35,15 @@ local_stable_diffusion_path = "stable_diffusion.json"
 public_stable_diffusion_path = "local_stable_diffusion.json"
 
 
-def get_sd_config(config_path=public_stable_diffusion_path):
+# 尝试打开自用配置文件
+if os.path.exists(public_stable_diffusion_path):
+    stable_diffusion_path = public_stable_diffusion_path
+else:
+    # 如果自用配置文件不存在，使用公共配置文件
+    stable_diffusion_path = local_stable_diffusion_path
+
+
+def get_sd_config(config_path=stable_diffusion_path):
     """读取stable diffusion配置文件"""
     with open(config_path, 'r', encoding='utf-8') as f:
         config = json.load(f)

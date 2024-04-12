@@ -16,8 +16,6 @@ from load_config import get_yaml_config
 
 config = get_yaml_config()
 ForwardKey = config["chatgpt"]["ForwardKey"]
-if not ForwardKey:
-    raise Exception("请配置ForwardKey！")
 
 class Main:
     url = "https://oa.api2d.net/v1/chat/completions"
