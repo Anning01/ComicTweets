@@ -141,9 +141,10 @@ def main(source_path, directory_nickname=None):
             if classify in ["1", "2"]:
                 asyncio.run(participle(file_path, path, participle_path))
                 asyncio.run(generate_prompt(path, path, name))
-                asyncio.run(voice_srt(participle_path, path, file_path, name))
                 asyncio.run(new_draw_picture(path, name, picture_save_path))
             if classify in ["1", "3"]:
+                asyncio.run(voice_srt(participle_path, path, file_path, name))
+            if classify in ["1", "4"]:
                 vc().merge_video(picture_save_path, path, name, save_path)
                 if ending_splice_video_path:
                     merge_videos(ending_splice_video_path, save_path, name)
@@ -158,8 +159,9 @@ if __name__ == "__main__":
     # 使用定义好的颜色和样式来打印选项
     print(f"{Colors.HEADER}欢迎使用我们的视频处理工具{Colors.ENDC}")
     print(f"{Colors.OKGREEN}1: {Colors.BOLD}一键完成{Colors.ENDC}")
-    print(f"{Colors.BRIGHT_BLUE}2: {Colors.BOLD}生成分词+图片+语音{Colors.ENDC}")
-    print(f"{Colors.WARNING}3: {Colors.BOLD}已经检测过图片，直接合成视频{Colors.ENDC}")
+    print(f"{Colors.BRIGHT_BLUE}2: {Colors.BOLD}生成分词+图片{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}3: {Colors.BOLD}生成语音{Colors.ENDC}")
+    print(f"{Colors.WARNING}4: {Colors.BOLD}已经检测过图片，直接合成视频{Colors.ENDC}")
     print(f"{Colors.HEADER}输入后回车，默认为1{Colors.ENDC}")
     classify = input(f"{Colors.OKCYAN}请输入要操作的类型：{Colors.ENDC}") or "1"
 
