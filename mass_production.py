@@ -143,7 +143,6 @@ def main(source_path, directory_nickname=None):
                 asyncio.run(generate_prompt(path, path, name))
                 asyncio.run(new_draw_picture(path, name, picture_save_path))
             if classify in ["1", "3"]:
-                os.makedirs(participle_path, exist_ok=True)
                 asyncio.run(voice_srt(participle_path, path, file_path, name))
             if classify in ["1", "4"]:
                 vc().merge_video(picture_save_path, path, name, save_path)
