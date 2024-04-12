@@ -5,6 +5,9 @@
 [![Watch the video](https://img.youtube.com/vi/ZcZbA1lVa34/0.jpg)](https://youtu.be/ZcZbA1lVa34 "Watch the video")
 
 
+# 教程
+B站：https://www.bilibili.com/video/BV1pt42177v9/
+
 # Installation and Running
 
 ## Windows 10/11 or Linux or macos
