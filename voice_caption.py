@@ -10,6 +10,7 @@ import random
 import re
 from datetime import datetime
 import subprocess
+import asyncio
 
 import aiofiles
 import edge_tts
@@ -503,7 +504,6 @@ async def voice_srt(participle_path, path, name_path, name):
 
 
 if __name__ == "__main__":
-    import asyncio
     import os
 
     name = "残忍冷血大佬被傻妻抱怀里了第六到十章"
