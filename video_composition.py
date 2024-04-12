@@ -70,9 +70,10 @@ class Main:
             audio_path = os.path.join(audio_path_path, f"{name}.mp3")
             srt_path = os.path.join(audio_path_path, f"{name}.srt")
             time_file = os.path.join(audio_path_path, f"{name}time.txt")
-            self.disposable_synthesis(
+            data = self.disposable_synthesis(
                 picture_path_list, audio_path, srt_path, time_file, file_path, name
             )
+            return data
         else:
             audio_path_list = sorted(
                 [
@@ -184,6 +185,9 @@ class Main:
         # 首先创建图片文件
         os.makedirs(save_path, exist_ok=True)
         out_path = os.path.join(save_path, f"{name}.mp4")
+
+        if os.path.exists(out_path):
+            return True
 
         if animation:
             self.disposable_synthesis_animation(

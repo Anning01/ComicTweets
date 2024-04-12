@@ -145,10 +145,11 @@ def main(source_path, directory_nickname=None):
             if classify in ["1", "3"]:
                 asyncio.run(voice_srt(participle_path, path, file_path, name))
             if classify in ["1", "4"]:
-                vc().merge_video(picture_save_path, path, name, save_path)
-                if ending_splice_video_path:
+                is_exists = vc().merge_video(picture_save_path, path, name, save_path)
+                if ending_splice_video_path and not is_exists:
                     merge_videos(ending_splice_video_path, save_path, name)
-                merge_cover(save_path, name, os.path.join(save_path, f"{name}.mp4"), directory_nickname)
+                if not is_exists:
+                    merge_cover(save_path, name, os.path.join(save_path, f"{name}.mp4"), directory_nickname)
                 # 将原文移到新目录 并且名字加上已完成
                 os.rename(file_path, os.path.join(store_path, f"{name}_已完成.txt"))
 
