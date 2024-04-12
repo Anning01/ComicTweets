@@ -5,6 +5,7 @@
 # @time:2024/04/09 14:44
 # @file:voice_caption.py
 # 将图片和文字，字幕 一次性合成
+import json
 import os.path
 import random
 import re
@@ -85,9 +86,9 @@ async def spilt_str2(s, t, k=limit):
 
             for _i in range(e):
                 if _i == e - 1:
-                    ss_valid.append(_ss[n_e * _i:])
+                    ss_valid.append(_ss[n_e * _i :])
                 else:
-                    ss_valid.append(_ss[n_e * _i: n_e * (_i + 1)])
+                    ss_valid.append(_ss[n_e * _i : n_e * (_i + 1)])
         else:
             ss_valid.append(_ss)
 
@@ -314,10 +315,14 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
 
 # 合并文件夹下所有MP3文件为一个音频文件
 async def merge_bgm(bgm_folder):
-    mp3_files = [os.path.join(bgm_folder, mp3_file) for mp3_file in os.listdir(bgm_folder) if mp3_file.endswith('.mp3')]
+    mp3_files = [
+        os.path.join(bgm_folder, mp3_file)
+        for mp3_file in os.listdir(bgm_folder)
+        if mp3_file.endswith(".mp3")
+    ]
     random.shuffle(mp3_files)  # 随机化列表中元素的顺序
 
-    with open('bgm_list.txt', 'w', encoding="utf-8") as filelist:
+    with open("bgm_list.txt", "w", encoding="utf-8") as filelist:
         for mp3_file in mp3_files:
             filelist.write(f"file '{mp3_file}'\n")
 
@@ -325,17 +330,66 @@ async def merge_bgm(bgm_folder):
     #     for mp3_file in os.listdir(bgm_folder):
     #         if mp3_file.endswith('.mp3'):
     #             filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
-    subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'bgm_list.txt', '-c', 'copy', 'merged_bgm.mp3'],
-                   check=True)
-    os.remove('bgm_list.txt')
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            "bgm_list.txt",
+            "-c",
+            "copy",
+            "merged_bgm.mp3",
+        ],
+        check=True,
+    )
+    os.remove("bgm_list.txt")
 
 
 # 获取媒体文件长度
 async def get_media_length(file_path):
     result = subprocess.run(
-        ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1',
-         file_path], stdout=subprocess.PIPE, text=True)
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            file_path,
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
     return float(result.stdout)
+
+
+# 获取音频文件的详细信息（比特率、采样率、声道数）
+async def get_audio_details(file_path):
+    cmd = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "a:0",
+        "-show_entries",
+        "stream=bit_rate,sample_rate,channels",
+        "-of",
+        "json",
+        file_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    metadata = json.loads(result.stdout)
+    details = {
+        "bit_rate": int(metadata["streams"][0]["bit_rate"]),
+        "sample_rate": int(metadata["streams"][0]["sample_rate"]),
+        "channels": int(metadata["streams"][0]["channels"]),
+    }
+    return details
 
 
 # 循环BGM以匹配主音轨长度，然后与主音轨混合
@@ -343,41 +397,86 @@ async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
     await merge_bgm("bgm")
     main_length = await get_media_length(main_audio)
     bgm_length = await get_media_length(bgm_file)
-    main_volume = f'{main_db}dB'
-    bgm_volume = f'{bgm_db}dB'
+    main_volume = f"{main_db}dB"
+    bgm_volume = f"{bgm_db}dB"
     # 计算BGM需要循环的次数
     loop_count = int(main_length // bgm_length) + 1 if bgm_length < main_length else 1
 
     # 如果需要，循环BGM
     if loop_count > 1:
-        with open('looped_bgm_list.txt', 'w', encoding="utf-8") as loop_file:
+        with open("looped_bgm_list.txt", "w", encoding="utf-8") as loop_file:
             for _ in range(loop_count):
                 loop_file.write(f"file '{bgm_file}'\n")
         subprocess.run(
-            ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'looped_bgm_list.txt', '-c', 'copy', 'looped_bgm.mp3'],
-            check=True)
-        looped_bgm = 'looped_bgm.mp3'
-        os.remove('looped_bgm_list.txt')
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                "looped_bgm_list.txt",
+                "-c",
+                "copy",
+                "looped_bgm.mp3",
+            ],
+            check=True,
+        )
+        looped_bgm = "looped_bgm.mp3"
+        os.remove("looped_bgm_list.txt")
     else:
         looped_bgm = bgm_file
 
+    audio_details = await get_audio_details(main_audio)
+
+    # 采样率、声道和比特率
+    sample_rate = str(audio_details["sample_rate"])
+    channels = str(audio_details["channels"])
+    bitrate = str(audio_details["bit_rate"])
     # 转换循环后的BGM为单声道，采样率调整为24kHz
-    subprocess.run(['ffmpeg', '-i', looped_bgm, '-ac', '1', '-ar', '24000', 'bgm_converted.mp3'], check=True)
+    converted_bgm = os.path.join(save_dir, "bgm_converted.mp3")
+
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", looped_bgm, "-ac", str(channels), "-ar", str(sample_rate), converted_bgm],
+        check=True
+    )
 
     output_file = os.path.join(save_dir, "out.mp3")
     # 混合主音轨和已转换的BGM
-    subprocess.run([
-        'ffmpeg', '-i', main_audio, '-i', 'bgm_converted.mp3',
-        '-filter_complex',
-        f"[0:a]aformat=sample_rates=24000:channel_layouts=mono,volume={main_volume}[a0];[1:a]aformat=sample_rates=24000:channel_layouts=mono,volume={bgm_volume}[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
-        '-map', '[aout]', '-ac', '1', '-ar', '24000', '-y', output_file
-    ], check=True)
-
+    # subprocess.run([
+    #     'ffmpeg', '-i', main_audio, '-i', 'bgm_converted.mp3',
+    #     '-filter_complex',
+    #     f"[0:a]aformat=sample_rates=24000:channel_layouts=mono,volume={main_volume}[a0];[1:a]aformat=sample_rates=24000:channel_layouts=mono,volume={bgm_volume}[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
+    #     '-map', '[aout]', '-ac', '1', '-ar', '24000', '-y', output_file
+    # ], check=True)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            main_audio,
+            "-i",
+            converted_bgm,
+            "-filter_complex",
+            f"[0:a]aformat=sample_rates={sample_rate}:channel_layouts=stereo,volume={main_volume}[a0];[1:a]aformat=sample_rates={sample_rate}:channel_layouts=stereo,volume={bgm_volume}[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
+            "-map",
+            "[aout]",
+            "-ac",
+            channels,
+            "-ar",
+            sample_rate,
+            "-b:a",
+            bitrate,
+            output_file,
+        ],
+        check=True,
+    )
     # 清理临时文件
-    os.remove('merged_bgm.mp3')
-    os.remove('bgm_converted.mp3')
+    os.remove("merged_bgm.mp3")
+    os.remove(converted_bgm)
     if loop_count > 1:
-        os.remove('looped_bgm.mp3')
+        os.remove("looped_bgm.mp3")
     os.replace(output_file, main_audio)
 
 
@@ -386,16 +485,16 @@ async def picture_processing_time(filename, section_path, save_dir, name):
     text = []  # 临时存储当前字幕块的文本行
     timecode = None  # 初始化时间码变量
 
-    with open(filename, 'r', encoding='utf-8') as file:
+    with open(filename, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()  # 移除行首尾的空白字符
 
             if line.isdigit():  # 跳过字幕编号行
                 continue
 
-            if '-->' in line:  # 检测时间码行
+            if "-->" in line:  # 检测时间码行
                 if text:  # 如果前一个字幕块的文本已经读取，存储前一个字幕块
-                    subtitles.append((timecode, ' '.join(text)))
+                    subtitles.append((timecode, " ".join(text)))
                     text = []  # 重置文本列表为下一个字幕块做准备
                 timecode = line  # 更新时间码
 
@@ -406,8 +505,8 @@ async def picture_processing_time(filename, section_path, save_dir, name):
 
         # 添加文件末尾的最后一个字幕块（如果有）
         if text:
-            subtitles.append((timecode, ' '.join(text)))
-    with open(section_path, 'r', encoding="utf-8") as f:
+            subtitles.append((timecode, " ".join(text)))
+    with open(section_path, "r", encoding="utf-8") as f:
         section_list = f.readlines()
     section_time_list = []
     index_ = 0
@@ -435,7 +534,7 @@ async def picture_processing_time(filename, section_path, save_dir, name):
 
 
 async def create_voice_srt_new3(
-        name, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
+    name, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
 ):
     mp3_name = f"{name}.mp3"
     vtt_name = f"{name}.vtt"
@@ -451,11 +550,15 @@ async def create_voice_srt_new3(
     time_exists = await check_file_exists(os.path.join(save_dir, f"{name}time.txt"))
     if mp3_exists and srt_exists and time_exists:
         return
-    await edge_gen_srt2(file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume)
+    await edge_gen_srt2(
+        file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume
+    )
 
     await srt_regen_new(file_srt, file_srt_final, False)
 
-    await picture_processing_time(file_srt_final, os.path.join(save_dir, f"{name}.txt"), save_dir, name)
+    await picture_processing_time(
+        file_srt_final, os.path.join(save_dir, f"{name}.txt"), save_dir, name
+    )
     #  删除其他生成文件
     os.remove(file_vtt)
     os.remove(file_srt)
@@ -470,7 +573,7 @@ async def create_voice_srt_new3(
 async def voice_srt(participle_path, path, name_path, name):
     await print_tip("开始生成语音字幕")
     if once:
-        with open(name_path, 'r', encoding='utf-8') as f:
+        with open(name_path, "r", encoding="utf-8") as f:
             content = f.read()
         max_attempts = 10  # 设置最大尝试次数
         attempts = 0  # 初始化尝试次数计数器
@@ -494,8 +597,12 @@ async def voice_srt(participle_path, path, name_path, name):
             index = 1
             for line in lines:
                 if line:
-                    mp3_exists = await check_file_exists(os.path.join(path, f"{index}.mp3"))
-                    srt_exists = await check_file_exists(os.path.join(path, f"{index}.srt"))
+                    mp3_exists = await check_file_exists(
+                        os.path.join(path, f"{index}.mp3")
+                    )
+                    srt_exists = await check_file_exists(
+                        os.path.join(path, f"{index}.srt")
+                    )
                     if memory and mp3_exists and srt_exists:
                         await print_tip(f"使用缓存，读取第{index}段语音字幕")
                     else:
@@ -504,14 +611,6 @@ async def voice_srt(participle_path, path, name_path, name):
 
 
 if __name__ == "__main__":
-    import os
+    save_dir = './'
+    asyncio.run(mix_main_and_bgm("./20075.mp3", "merged_bgm.mp3", save_dir))
 
-    name = "残忍冷血大佬被傻妻抱怀里了第六到十章"
-    save_dir = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章"
-    with open("残忍冷血大佬被傻妻抱怀里了第六到十章.txt", "r", encoding="utf-8") as f:
-        section_list = f.read()
-    asyncio.run(create_voice_srt_new3(name, section_list, save_dir))
-    # filename = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章/残忍冷血大佬被傻妻抱怀里了第六到十章.srt"
-    # section_path = "participle/残忍冷血大佬被傻妻抱怀里了第六到十章/残忍冷血大佬被傻妻抱怀里了第六到十章.txt"
-    # a = asyncio.run(load_srt_new(save_dir, name, filename, False, section_path))
-    # a = asyncio.run(picture_processing_time(filename, section_path, save_dir, name))
