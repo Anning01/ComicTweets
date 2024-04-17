@@ -43,7 +43,7 @@ from moviepy.editor import (
 class Main:
 
     def merge_video(
-        self, picture_path_path: str, audio_path_path: str, name: str, file_path: str
+            self, picture_path_path: str, audio_path_path: str, name: str, file_path: str
     ):
         """
         :param picture_path_list: 图片路径列表
@@ -148,31 +148,31 @@ class Main:
         try:
             # Split the string by colon
             time_parts = time_str.split(":")
-            
+
             # If milliseconds are included, split them by the comma
             if ',' in time_parts[-1]:
                 seconds, milliseconds = time_parts[-1].split(",")
             else:
                 seconds = time_parts[-1]
                 milliseconds = '0'  # No milliseconds present, default to 0
-            
+
             # Convert each part to an integer
             hours = int(time_parts[0])
             minutes = int(time_parts[1])
             seconds = int(seconds)
             milliseconds = int(milliseconds)
-            
+
             # Calculate total seconds
             total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
         except ValueError as e:
             # Return an error message if the input format is incorrect
             return f"Error: {str(e)}"
-    
+
         # Return the total seconds
         return total_seconds
 
     def disposable_synthesis(
-        self, picture_path_list, audio_path, srt_path, time_file, save_path, name
+            self, picture_path_list, audio_path, srt_path, time_file, save_path, name
     ):
         # 一次性合成图片视频字幕
         """
@@ -198,7 +198,7 @@ class Main:
             with open(file_path, "w", encoding="utf-8") as f:
                 for index, picture_path in enumerate(picture_path_list):
                     f.write(f"file '{picture_path}'\n")
-                    if index+1 < len(time_list):
+                    if index + 1 < len(time_list):
                         f.write(
                             f"duration {self.convert_time_string(time_list[index])}\n"
                         )
@@ -223,7 +223,7 @@ class Main:
         self.create_srt(out_path, srt_path, save_path, name)
 
     def create_animated_segment(
-        self, image_path, duration, output_path, index, multiple, action
+            self, image_path, duration, output_path, index, multiple, action
     ):
         initial_zoom = 1.0
         duration = self.convert_time_string(duration)
@@ -232,35 +232,35 @@ class Main:
         u_d_move = (height * multiple - height - 25 - 25) / (25 * duration)
         if action == "shrink":
             scale = (
-                f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"
-                + str(duration)
-                + f":s={width}x{height}"
+                    f"scale=-2:ih*10,zoompan=z='if(lte(zoom,{initial_zoom}),{multiple},max(zoom-{zoom_steps},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*"
+                    + str(duration)
+                    + f":s={width}x{height}"
             )
         elif action == "left_move":
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,-1),(iw-iw/zoom)/2,x+{l_r_move*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
-                + str(duration)
-                + f":s={width}x{height}"
+                    f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,-1),(iw-iw/zoom)/2,x+{l_r_move * 10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                    + str(duration)
+                    + f":s={width}x{height}"
             )
         elif action == "right_move":
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw/zoom)/2,x-{l_r_move*10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
-                + str(duration)
-                + f":s={width}x{height}"
+                    f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw/zoom)/2,x-{l_r_move * 10})':y='if(lte(on,1),(ih-ih/zoom)/2,y)':d=25*"
+                    + str(duration)
+                    + f":s={width}x{height}"
             )
         elif action == "up_move":
             """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+2)':d=150"  1.mp4"""
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+{u_d_move*10})':d=25*"
-                + str(duration)
-                + f":s={width}x{height}"
+                    f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,-1),(ih-ih/zoom)/2,y+{u_d_move * 10})':d=25*"
+                    + str(duration)
+                    + f":s={width}x{height}"
             )
         elif action == "down_move":
             """ffmpeg -y -i 1.jpg -vf "zoompan='1.5':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-2)':d=150"  1.mp4"""
             scale = (
-                f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-{u_d_move*10})':d=25*"
-                + str(duration)
-                + f":s={width}x{height}"
+                    f"scale=-2:ih*10,zoompan='{multiple}':x='if(lte(on,1),(iw-iw/zoom)/2,x)':y='if(lte(on,1),(ih/zoom)/2,y-{u_d_move * 10})':d=25*"
+                    + str(duration)
+                    + f":s={width}x{height}"
             )
         else:
             # scale = f"scale=-2:ih*10,zoompan=z='zoom+{zoom_steps}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=25*{duration}:s={width}x{height}:fps=25"
@@ -314,16 +314,22 @@ class Main:
         subprocess.run(cmd, check=True)
 
     def disposable_synthesis_animation(
-        self, picture_path_list, durations, audio_path, save_path, out_path
+            self, picture_path_list, durations, audio_path, save_path, out_path
     ):
         if os.path.exists(out_path):
             return
         video_list = []
         animations = ["shrink", "magnify", "left_move", "right_move", "up_move", "down_move"]
         for index, (image_path, duration) in enumerate(
-            zip(picture_path_list, durations)
+                zip(picture_path_list, durations)
         ):
             output_path = os.path.join(save_path, f"animated_segment_{index}.mp4")
+            if os.path.exists(output_path):
+                if os.path.exists(os.path.join(save_path, f"animated_segment_{index+1}.mp4")):
+                    video_list.append(output_path)
+                    continue
+                else:
+                    os.remove(output_path)
             selected_animation = random.choice(animations)
             self.create_animated_segment(
                 image_path,

@@ -36,6 +36,7 @@ class Main:
         is_exists = await check_file_exists(os.path.join(save_path, f"{index}.png"))
         if memory and is_exists:
             return
+        await print_tip(f"开始生成第{index}张图片")
         prompt = obj["prompt"]
         if lora:
             prompt = f"{lora}, {prompt}"
@@ -85,11 +86,10 @@ async def new_draw_picture(path, name, save_path):
     is_exists = await check_file_exists(obj_path)
     if not is_exists:
         raise Exception(f"{name}.json文件不存在")
-
+    await print_tip(f"开始生成《{name}》图片")
     with open(obj_path, "r", encoding="utf-8") as f:
         obj_list = json.load(f)
     for index, obj in enumerate(obj_list, start=1):
-        await print_tip(f"开始生成第{index}张图片")
         await Main().draw_picture(obj, index, save_path)
 
 

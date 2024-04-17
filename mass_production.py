@@ -5,6 +5,7 @@ import re
 import subprocess
 
 from load_config import get_yaml_config
+from main import role
 from translate import Sample as translate
 from cover_drawing import add_watermark
 from participle import main as participle
@@ -140,6 +141,7 @@ def main(source_path, directory_nickname=None):
             save_path = os.path.join(store_path, "video")
             asyncio.run(participle(file_path, path, participle_path))
             if classify in ["1", "2"]:
+                asyncio.run(role(path))
                 asyncio.run(generate_prompt(path, path, name))
                 asyncio.run(new_draw_picture(path, name, picture_save_path))
             if classify in ["1", "3"]:
@@ -155,7 +157,6 @@ def main(source_path, directory_nickname=None):
 
 
 if __name__ == "__main__":
-
 
     # 使用定义好的颜色和样式来打印选项
     print(f"{Colors.HEADER}欢迎使用我们的视频处理工具{Colors.ENDC}")

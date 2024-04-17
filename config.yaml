@@ -1,4 +1,4 @@
-# 书配置
+# 书配置 记得要加一个空格！！！！！！！！
 book:
   # 小说书名 要和文件同目录 不要带.txt
   name:
@@ -26,9 +26,9 @@ audio:
   # 是否开启bgm 开启bgm 项目下要有一个bgm的目录 
   bgm: true
   # 主音频分贝db
-  main_db: 0
+  main_db: 15
   # 背景音频分贝db
-  bgm_db: -20
+  bgm_db: -15
 
 # 分词
 potential:
@@ -37,13 +37,13 @@ potential:
   # 角色名字最大长度
   max_length: 4
   # 角色数量
-  top_n: 4
+  top_n: 2
   # 每张图片的最小文字数量
   min_words: 30
   #  每张图片的最大文字数量
   max_words: 40
   # 是否使用阿里云翻译 不使用GPT
-  translate: false
+  translate: true
   # 阿里云翻译key
   access_key_id:
   # 阿里云翻译access_key_secret
@@ -65,9 +65,9 @@ video:
   # ImageMagick 路径 # C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe
   imagemagick_path:
   # 字幕字体大小
-  fontsize: 40
+  fontsize: 12
   # 字体颜色
-  fontcolor: white
+  fontcolor: FFFFFF
   # 字体文件 要求在项目目录下
   fontfile: simhei.ttf
   # 描边颜色 内描边
@@ -77,11 +77,11 @@ video:
   # 文字间距
   kerning: 1
   # 字幕位置 越小越靠山 越大越靠下 0 - 1 开启ffmpeg后 6=上 10中 2下
-  position: 0.9
+  position: 10
   # 使用moviepy或者ffmpeg合成视频
-  use_moviepy: true
+  use_moviepy: false
   # 一次性合成 不用分段合成 视频效果更好 需要安装ffmpeg环境
-  once: false
+  once: true
   # 是否开启动画，只有once开启时候才会有动画
   animation: true
   # 动画幅度比例 最佳1.2
