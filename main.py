@@ -32,9 +32,9 @@ if not os.path.exists(f"{name}.txt"):
     raise Exception("请将小说文件放入根目录")
 
 
-async def role(path):
+async def role(path, book_name):
     await print_tip("开始提取角色")
-    role_path = os.path.join(path, f"{name}.txt")
+    role_path = os.path.join(path, f"{book_name}.txt")
     async with aiofiles.open(role_path, "r", encoding="utf8") as f:
         content = await f.read()
         novel_text = content.replace("\n", "").replace("\r", "").replace("\r\n", "")
@@ -49,7 +49,7 @@ async def role(path):
         async with aiofiles.open("prompt.txt", "r", encoding="utf8") as f:
             prompt_text = await f.read()
 
-        async with aiofiles.open(f"{name}prompt.txt", "w", encoding="utf8") as f:
+        async with aiofiles.open(f"{book_name}prompt.txt", "w", encoding="utf8") as f:
             await f.write(prompt_text + text_)
         # ToDo 做人物形象图
 
@@ -69,7 +69,7 @@ async def main():
 
     await participle(f"{name}.txt", path, participle_path)
 
-    await role(path)
+    await role(path, name)
 
     # 创建 ProcessPoolExecutor 来运行新的进程
     executor = ProcessPoolExecutor()

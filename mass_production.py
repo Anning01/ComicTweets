@@ -141,7 +141,7 @@ def main(source_path, directory_nickname=None):
             save_path = os.path.join(store_path, "video")
             asyncio.run(participle(file_path, path, participle_path))
             if classify in ["1", "2"]:
-                asyncio.run(role(path))
+                asyncio.run(role(path, name))
                 asyncio.run(generate_prompt(path, path, name))
                 asyncio.run(new_draw_picture(path, name, picture_save_path))
             if classify in ["1", "3"]:
