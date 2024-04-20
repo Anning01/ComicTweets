@@ -5,7 +5,7 @@ import requests
 def check_command_installed(command):
     """检查命令是否安装在系统中"""
     try:
-        subprocess.run([command, '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        subprocess.run([command, '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         print(f"{command} 已安装。")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print(f"警告：未检测到 {command}。")
