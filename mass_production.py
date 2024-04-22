@@ -120,14 +120,12 @@ def extract_number(filename):
     match = re.search(r'\d+', filename)
     if match:
         return int(match.group())
-    return None
+    return float('inf')
 
 
 def main(source_path, directory_nickname=None):
     txt_files = [f for f in os.listdir(source_path) if f.endswith('.txt')]
-
     sorted_files = sorted(txt_files, key=extract_number)
-
     for filename in sorted_files:
         file_path = os.path.join(source_path, filename)
         if os.path.isfile(file_path):

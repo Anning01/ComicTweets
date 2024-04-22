@@ -23,29 +23,6 @@ class Main:
     def __str__(self):
         return "API2D请求失败，请检查配置！"
 
-    async def fetch_data(self, headers, data):
-        timeout = ClientTimeout(total=30)  # 设置总超时时间为15秒
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            try:
-                response = await session.post(self.url, headers=headers, json=data)
-                # 确保我们总是消费响应的内容，释放连接
-                response_text = await response.text()
-            except asyncio.TimeoutError:
-                return False, "API2D连接超时，30秒未响应！"
-            except ClientConnectionError:
-                return False, f"连接错误，{self.url} 建立连接失败，请检查网络。"
-            except Exception as e:
-                return False, str(e)
-
-            if response.status not in [200, 201]:  # 检查HTTP状态码
-                try:
-                    error_message = await response.json()
-                except Exception:  # 如果响应不是JSON格式，则使用文本
-                    error_message = response_text
-                return False, error_message.get("message", "API2D返回状态码错误，请检查配置！")
-
-            return True, response_text  # 或其他处理逻辑
-
     async def prompt_generation_chatgpt(self, param, messages):
         # 发送HTTP POST请求
         headers = {
@@ -67,15 +44,24 @@ class Main:
         try:
             response = requests.post(self.url, headers=headers, json=data, timeout=15)
         except Timeout:
-            return False, "API2D连接超时，15秒未响应！"
+            raise TimeoutError("API2D连接超时，15秒未响应！")
+            # return False, "API2D连接超时，15秒未响应！"
         except ConnectionError:
-            return False, f"连接错误，{self.url} 建立连接失败，请检查网络。"
+            raise ConnectionError(f"API2D连接错误，{self.url} 建立连接失败，请检查网络！")
+            # return False, f"连接错误，{self.url} 建立连接失败，请检查网络。"
         except Exception as e:
-            return False, str(e)
+            raise Exception(str(e))
+            # return False, str(e)
         if response.status_code != 200:
-            return False, response.json().get(
+            raise Exception(
+                response.json().get(
                 "message", "API2D返回状态码错误，请检查配置！"
             )
+            )
+            # return False, response.json().get(
+                # "message", "API2D返回状态码错误，请检查配置！"
+            # )
+
         # 发送HTTP POST请求
         result_json = response.json()
         # 输出结果
