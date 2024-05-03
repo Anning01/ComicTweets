@@ -23,11 +23,18 @@ firstphase_width = config["stable_diffusion"]["width"]
 firstphase_height = config["stable_diffusion"]["height"]
 lora = config["stable_diffusion"]["lora"]
 memory = config["book"]["memory"]
+role_enabled = config["stable_diffusion"]["role"]
 
 sd_url = server_ip + "/sdapi/v1/txt2img"
 
 
 class Main:
+
+    async def find_role_by_name(self, data, name):
+        for item in data:
+            if item['name'] == name:
+                return item['role']
+        return None  # 如果没有找到匹配的名称，返回 None
 
     async def draw_picture(self, obj, index, save_path):
         data = get_sd_config()
@@ -47,6 +54,31 @@ class Main:
             "prompt": prompt,
             **data,
         }
+        if role_enabled and obj.get("role"):
+            controlnet = []
+
+            with open(os.path.join(os.path.dirname(save_path), "participle", "role.json"), "r", encoding="utf-8") as file:
+                role_data = json.load(file)
+            for i in obj["role"]:
+                role_image = await self.find_role_by_name(role_data, i)
+                with open(os.path.join("roles", role_image), "rb") as f:
+                    img_data = f.read()
+
+                base64_data = base64.b64encode(img_data)
+                base64_str = base64_data.decode("utf-8")
+                controlnet.append({
+                    # "model": "ip-adapter_sd15 [6a3f6166]",
+                    "module": "reference_only",
+                    "weight": 1,
+                    "input_image": base64_str,
+                    "enabled": True,
+                    "resize_mode": "Crop and Resize",
+                    "guidance_end": 1,
+                    "guidance_start": 0,
+                    "save_detected_map": False,
+                })
+
+            novel_dict["alwayson_scripts"] = {"controlnet": {"args": controlnet}}
         try:
             # 替换成异步协程
             async with aiohttp.ClientSession() as session:

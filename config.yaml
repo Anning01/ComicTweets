@@ -59,6 +59,8 @@ stable_diffusion:
   width: 540
   # lora <lora:lora name:weight> 多个用英文,隔开
   lora:
+  # 角色固定 使用 Reference
+  role: false
 
 # 合成视频配置  
 video:
@@ -90,3 +92,9 @@ video:
 chatgpt:
   # ForwardKey
   ForwardKey:
+  # url
+  url: https://oa.api2d.net/v1
+  # 最大token数量
+  max_token: 16385
+  # 模型
+  model: gpt-3.5-turbo

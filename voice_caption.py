@@ -234,7 +234,7 @@ class CustomSubMaker(edge_tts.SubMaker):
 
     async def generate_cn_subs(self, text):
 
-        PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!", "…"]
+        PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!", "…", "+", "-"]
 
         def clause(self):
             start = 0
@@ -529,6 +529,8 @@ async def picture_processing_time(filename, section_path, save_dir, name):
                 index_ = i
                 time_ = next_start_time
                 break
+            else:
+                content_.replace(v[1], "")
     with open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
         f3.write(str(section_time_list))
 

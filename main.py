@@ -5,7 +5,9 @@
 # @time:2024/04/06 17:20
 # @file:async_main.py
 import asyncio
+import json
 import os
+import random
 from concurrent.futures import ProcessPoolExecutor
 
 import aiofiles
@@ -25,6 +27,7 @@ memory = config["book"]["memory"]
 once = config["video"]["once"]
 is_translate = config["potential"]["translate"]
 name = config["book"]["name"]
+role_enabled = config["stable_diffusion"]["role"]
 
 if not name:
     raise Exception("请输入书名")
@@ -35,23 +38,34 @@ if not os.path.exists(f"{name}.txt"):
 async def role(path, book_name):
     await print_tip("开始提取角色")
     role_path = os.path.join(path, f"{book_name}.txt")
-    async with aiofiles.open(role_path, "r", encoding="utf8") as f:
+    async with aiofiles.open(role_path, "r", encoding="utf-8") as f:
         content = await f.read()
         novel_text = content.replace("\n", "").replace("\r", "").replace("\r\n", "")
 
     # 提取文本中的潜在人名
     names = await extract_potential_names(novel_text)
     await print_tip(f"查询出角色：{', '.join(names)}")
-    text_ = ""
-    for n in names:
-        text_ += f"- {n}\n"
-    if not is_translate:
-        async with aiofiles.open("prompt.txt", "r", encoding="utf8") as f:
-            prompt_text = await f.read()
+    if role_enabled:
+        role_file = os.path.join(path, "role.json")
+        if not os.path.exists(role_file):
+            all_files = os.listdir("roles")
+            images = [file for file in all_files if file.endswith('.png')]
+            # 固定任务 抽卡
+            data = []
+            for i, n in enumerate(names):
+                data.append({"name": n, "role": random.sample(images, len(names))[i]})
 
-        async with aiofiles.open(f"{book_name}prompt.txt", "w", encoding="utf8") as f:
+            async with aiofiles.open(role_file, "w", encoding="utf-8") as f:
+                await f.write(json.dumps(data, ensure_ascii=False))
+
+    if not is_translate:
+        async with aiofiles.open("prompt.txt", "r", encoding="utf-8") as f:
+            prompt_text = await f.read()
+        text_ = ""
+        for n in names:
+            text_ += f"- {n}\n"
+        async with aiofiles.open(f"{book_name}prompt.txt", "w", encoding="utf-8") as f:
             await f.write(prompt_text + text_)
-        # ToDo 做人物形象图
 
 
 # 包装函数，用于在新进程中执行 voice_srt
