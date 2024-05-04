@@ -91,7 +91,7 @@ video:
 
 chatgpt:
   # ForwardKey
-  ForwardKey:
+  ForwardKey: ollama
   # url
   url: https://oa.api2d.net/v1
   # 最大token数量
