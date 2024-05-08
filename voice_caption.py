@@ -228,7 +228,6 @@ async def srt_regen_new(f_srt, f_save, flag):
     srt_list = await load_srt_new(f_srt, flag)
     await save_srt(f_save, srt_list)
 
-
 class CustomSubMaker(edge_tts.SubMaker):
     """重写此方法更好的支持中文"""
 
@@ -265,6 +264,49 @@ class CustomSubMaker(edge_tts.SubMaker):
                 return data
             try:
                 while self.subs[j + 1] in text:
+                    j += 1
+            except IndexError:
+                pass
+            data += edge_tts.submaker.formatter(start_time, self.offset[j][1], text)
+            j += 1
+        return data
+
+    async def generate_subs_based_on_punc(self, text) -> str:
+        PUNCTUATION = ['，', '。', '！', '？', '；',
+                       '：', '\n', '“', '”', ',', '!', '\\. ']
+
+        def clause(self) -> list[str]:
+            pattern = '(' + '|'.join(punc for punc in PUNCTUATION) + ')'
+            text_list = re.split(pattern, text)
+
+            index = 0
+            pattern = '^[' + ''.join(p for p in PUNCTUATION) + ']+$'
+            while (index < len(text_list) - 1):
+                if not text_list[index + 1]:
+                    text_list.pop(index + 1)
+                    continue
+                if re.match(pattern, text_list[index + 1]):
+                    if (text_list[index + 1] == '\n'):
+                        text_list.pop(index + 1)
+                        continue
+                    text_list[index] += text_list.pop(index + 1)
+                else:
+                    index += 1
+
+            return text_list
+
+        self.text_list = clause(self)
+        if len(self.subs) != len(self.offset):
+            raise ValueError("subs and offset are not of the same length")
+        data = "WEBVTT\r\n\r\n"
+        j = 0
+        for text in self.text_list:
+            try:
+                start_time = self.offset[j][0]
+            except IndexError:
+                return data
+            try:
+                while (self.subs[j + 1] in text):
                     j += 1
             except IndexError:
                 pass
