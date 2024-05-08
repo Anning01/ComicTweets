@@ -31,8 +31,6 @@ role_enabled = config["stable_diffusion"]["role"]
 
 if not name:
     raise Exception("请输入书名")
-if not os.path.exists(f"{name}.txt"):
-    raise Exception("请将小说文件放入根目录")
 
 
 async def role(path, book_name):
@@ -78,6 +76,8 @@ def run_voice_srt_in_new_process(participle_path, path, name):
 
 
 async def main():
+    if not os.path.exists(f"{name}.txt"):
+        raise Exception("请将小说文件放入根目录")
     path = os.path.join(name, "participle")
     participle_path = os.path.join(path, f"{name}.txt")
 
