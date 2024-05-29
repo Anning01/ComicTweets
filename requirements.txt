@@ -9,3 +9,5 @@ aiofiles
 alibabacloud-alimt20181012
 openai
 pillow==9.5
+streamlit
+ruamel.yaml

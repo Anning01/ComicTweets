@@ -53,6 +53,7 @@ class Main:
             "negative_prompt": obj["negative_prompt"],
             "prompt": prompt,
             **data,
+
         }
         if role_enabled and obj.get("role"):
             controlnet = []

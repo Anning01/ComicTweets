@@ -1,17 +1,17 @@
 # 书配置 记得要加一个空格！！！！！！！！
 book:
   # 小说书名 要和文件同目录 不要带.txt
-  name:
+  name: 天帝传说
   # 是否开启记忆，意外退出重新启动从上次意外退出的地方开始执行
   memory: true
 # 批量文件处理 使用mass_production.py 文件
 batch:
   # 资源文件目录
-  source_path:
+  source_path: novel_in_here
   # 输出文件目录
-  output_path:
+  output_path: out_file
   # 尾部视频拼接路径
-  ending_splice_path:
+  ending_splice_path: ending_splice/tail.mp4
 # 音频
 audio:
   # 每行的字数限制
@@ -36,18 +36,18 @@ potential:
   min_length: 2
   # 角色名字最大长度
   max_length: 4
-  # 角色数量
+  # 角色数量true
   top_n: 2
   # 每张图片的最小文字数量
   min_words: 30
   #  每张图片的最大文字数量
   max_words: 40
   # 是否使用阿里云翻译 不使用GPT
-  translate: true
+  translate: false
   # 阿里云翻译key
-  access_key_id:
+  access_key_id: 
   # 阿里云翻译access_key_secret
-  access_key_secret:
+  access_key_secret: 
 
 # 这里只放常规参数，更多参数请修改stable diffusion.json 
 stable_diffusion:
@@ -58,9 +58,9 @@ stable_diffusion:
   # 图片宽
   width: 540
   # lora <lora:lora name:weight> 多个用英文,隔开
-  lora:
+  lora: animeartstyle,school uniform
   # 角色固定 使用 Reference
-  role: false
+  role: true
 
 # 合成视频配置  
 video:
@@ -93,8 +93,8 @@ chatgpt:
   # ForwardKey
   ForwardKey: ollama
   # url
-  url: https://oa.api2d.net/v1
+  url: http://localhost:11434/v1
   # 最大token数量
   max_token: 16385
   # 模型
-  model: gpt-3.5-turbo
+  model: qwen34b
