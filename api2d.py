@@ -37,7 +37,7 @@ class Main:
             }
         ]
         data = {
-            "model": "gpt-3.5-turbo",
+            "model": "gpt3.5-turbo",
             "messages": msg,
         }
         print("-----------开始请求API2D-----------")
