@@ -29,8 +29,8 @@ is_translate = config["potential"]["translate"]
 name = config["book"]["name"]
 role_enabled = config["stable_diffusion"]["role"]
 
-if not name:
-    raise Exception("请输入书名")
+# if not name:
+#     raise Exception("请输入书名")
 
 
 async def role(path, book_name):

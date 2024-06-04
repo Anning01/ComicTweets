@@ -123,7 +123,7 @@ def extract_number(filename):
     return float('inf')
 
 
-def main(source_path, directory_nickname=None):
+def main(source_path, classify, directory_nickname=None, dest_path=dest_path):
     txt_files = [f for f in os.listdir(source_path) if f.endswith('.txt')]
     sorted_files = sorted(txt_files, key=extract_number)
     for filename in sorted_files:
@@ -174,5 +174,5 @@ if __name__ == "__main__":
     ]
     # 这里是所有source_path目录下的子目录，首先先
     for directory in subdirectories:
-        main(os.path.join(source_path, directory), directory)
-    main(source_path, None)
+        main(os.path.join(source_path, directory), classify, directory)
+    main(source_path, classify, None)

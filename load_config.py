@@ -29,6 +29,11 @@ def get_yaml_config(config_path=config_path):
     return config
 
 
+def edit_yaml_config(data, config_path=config_path):
+    """读取yaml配置文件"""
+    with open(config_path, 'w', encoding='utf-8') as file:  
+        yaml.dump(data, file)  
+
 # 自用配置文件路径
 local_stable_diffusion_path = "stable_diffusion.json"
 # 公共配置文件路径
