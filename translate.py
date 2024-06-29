@@ -27,6 +27,8 @@ class Sample:
         config.access_key_id = access_key_id
         config.access_key_secret = access_key_secret
         config.region_id = region_id
+        config.connect_timeout = 5000
+        config.read_timeout = 10000
         return alimt20181012Client(config)
 
     @staticmethod
@@ -46,7 +48,7 @@ class Sample:
             text,
             region="cn-hangzhou",
             format_type="text",
-            source_language="zh",
+            source_language=language,
             target_language="en",
     ) -> None:
         if language == "en":

@@ -9,4 +9,5 @@ aiofiles
 alibabacloud-alimt20181012
 openai
 nltk
+streamlit
 pillow==9.5
