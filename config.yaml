@@ -4,6 +4,8 @@ book:
   name:
   # 是否开启记忆，意外退出重新启动从上次意外退出的地方开始执行
   memory: true
+  # 小说使用的语言 默认 zh | en 为英语 具体请查看阿里云翻译的文档
+  language: zh
 # 批量文件处理 使用mass_production.py 文件
 batch:
   # 资源文件目录
@@ -88,6 +90,8 @@ video:
   animation: true
   # 动画幅度比例 最佳1.2
   animation_speed: 1.2
+  # 是否开启字幕
+  subtitles: true
 
 chatgpt:
   # ForwardKey

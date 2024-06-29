@@ -6,10 +6,14 @@ from load_config import get_yaml_config, print_tip, check_file_exists
 import aiofiles
 from aiofiles import os as aio_os
 
+from utils.english_segment import split_text_into_paragraphs, split_paragraphs_into_sentences, \
+    split_spain_paragraphs_into_sentences
+
 config = get_yaml_config()
 min_words = config["potential"]["min_words"]
 max_words = config["potential"]["max_words"]
 memory = config["book"]["memory"]
+language = config["book"]["language"]
 
 
 # 根据小说文本进行分词
@@ -33,6 +37,25 @@ async def combine_strings(strings):
 async def participle(text):
     PUNCTUATION = ["，", "。", "！", "？", "；", "：", "”", ",", "!", "…"]
 
+    # async def clause():
+    #     start = 0
+    #     i = 0
+    #     text_list = []
+    #     while i < len(text):
+    #         if text[i] in PUNCTUATION:
+    #             try:
+    #                 while text[i] in PUNCTUATION:
+    #                     i += 1
+    #             except IndexError:
+    #                 pass
+    #             text_list.append(text[start:i].strip())
+    #             start = i
+    #         i += 1
+    #     return text_list
+    #
+    # text_list = await clause()
+    # result = await combine_strings(text_list)
+    # return result
     async def clause():
         start = 0
         i = 0
@@ -49,9 +72,20 @@ async def participle(text):
             i += 1
         return text_list
 
-    text_list = await clause()
-    result = await combine_strings(text_list)
-    return result
+    if language == "zh":
+        text_list = await clause()
+        result = await combine_strings(text_list)
+        return result
+    elif language == "en":
+        paragraphs = split_text_into_paragraphs(text)
+        return [sentence + '\n' for sentence in split_paragraphs_into_sentences(paragraphs)]
+
+    elif language == "es":
+        paragraphs = split_text_into_paragraphs(text)
+        return [sentence + '\n' for sentence in split_spain_paragraphs_into_sentences(paragraphs)]
+    else:
+        raise Exception("Unsupported language")
+
 
 
 async def main(name_path, path, participle_path):

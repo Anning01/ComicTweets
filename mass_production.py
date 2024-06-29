@@ -155,7 +155,6 @@ def main(source_path, classify, directory_nickname=None, dest_path=dest_path):
 
 
 if __name__ == "__main__":
-
     # 使用定义好的颜色和样式来打印选项
     print(f"{Colors.HEADER}欢迎使用我们的视频处理工具{Colors.ENDC}")
     print(f"{Colors.OKGREEN}1: {Colors.BOLD}一键完成{Colors.ENDC}")
@@ -165,7 +164,6 @@ if __name__ == "__main__":
     print(f"{Colors.WARNING}5: {Colors.BOLD}先固定角色{Colors.ENDC}")
     print(f"{Colors.HEADER}输入后回车，默认为1{Colors.ENDC}")
     classify = input(f"{Colors.OKCYAN}请输入要操作的类型：{Colors.ENDC}") or "1"
-
     entries = os.listdir(source_path)
     subdirectories = [
         entry for entry in entries

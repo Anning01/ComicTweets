@@ -5,16 +5,19 @@
 # @time:2024/04/09 14:44
 # @file:voice_caption.py
 # 将图片和文字，字幕 一次性合成
+import asyncio
 import json
 import os.path
 import random
 import re
-from datetime import datetime
 import subprocess
-import asyncio
+from datetime import datetime
+from typing import List
+from xml.sax.saxutils import unescape
 
 import aiofiles
 import edge_tts
+from edge_tts.submaker import formatter
 
 from char2voice import create_voice_srt_new2
 from load_config import get_yaml_config, check_file_exists, print_tip
@@ -29,6 +32,7 @@ main_db = config["audio"]["main_db"]
 bgm_db = config["audio"]["bgm_db"]
 once = config["video"]["once"]
 memory = config["book"]["memory"]
+language = config["book"]["language"]
 
 
 async def spilt_str2(s, t, k=limit):
@@ -142,8 +146,7 @@ async def spilt_str2(s, t, k=limit):
     return line_srt
 
 
-async def time_difference(time1, time2):
-    time_format = r"%H:%M:%S,%f"
+async def time_difference(time1, time2, time_format=r"%H:%M:%S,%f"):
     time1 = datetime.strptime(time1, time_format)
     time2 = datetime.strptime(time2, time_format)
 
@@ -227,6 +230,7 @@ async def save_srt(filename, srt_list):
 async def srt_regen_new(f_srt, f_save, flag):
     srt_list = await load_srt_new(f_srt, flag)
     await save_srt(f_save, srt_list)
+
 
 class CustomSubMaker(edge_tts.SubMaker):
     """重写此方法更好的支持中文"""
@@ -322,8 +326,66 @@ class CustomSubMaker(edge_tts.SubMaker):
         cleaned_text = re.sub(pattern, "", text)
         return cleaned_text
 
+    def generate_subs_pro(self, content_list) -> str:
 
-async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -> None:
+        if len(self.subs) != len(self.offset):
+            raise ValueError("subs and offset are not of the same length")
+
+        data = ""
+        sub_state_count = 0
+        sub_state_start = -1.0
+        sub_state_subs = ""
+        index = 0
+        content = content_list[index]
+
+        for idx, (offset, subs) in enumerate(zip(self.offset, self.subs)):
+            start_time, end_time = offset
+            subs = unescape(subs)
+
+            if len(sub_state_subs) > 0:
+                sub_state_subs += " "
+            sub_state_subs += subs
+
+            if sub_state_start == -1.0:
+                sub_state_start = start_time
+            sub_state_count += 1
+            if idx == len(self.offset) - 1 or self.subs[idx + 1] not in content:
+                subs = sub_state_subs
+
+                split_subs: List[str] = [
+                    subs[i: i + 100] for i in range(0, len(subs), 100)
+                ]
+                for i in range(len(split_subs) - 1):
+                    sub = split_subs[i]
+                    split_at_word = True
+                    if sub[-1] == " ":
+                        split_subs[i] = sub[:-1]
+                        split_at_word = False
+
+                    if sub[0] == " ":
+                        split_subs[i] = sub[1:]
+                        split_at_word = False
+
+                    if split_at_word:
+                        split_subs[i] += "-"
+
+                data += formatter(
+                    start_time=sub_state_start,
+                    end_time=end_time,
+                    subdata="\r\n".join(split_subs),
+                )
+                sub_state_count = 0
+                sub_state_start = -1
+                sub_state_subs = ""
+                if index < len(content_list) - 1:
+                    index += 1
+                    content = content_list[index]
+            else:
+                content = re.sub(subs, '', content, count=1)
+        return data
+
+
+async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume, participle_path) -> None:
     content = f_txt
     communicate = edge_tts.Communicate(
         text=content, voice=p_voice, rate=p_rate, volume=p_volume
@@ -338,21 +400,37 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume) -
                     (chunk["offset"], chunk["duration"]), chunk["text"]
                 )
 
-    async with aiofiles.open(f_vtt, "w", encoding="utf-8") as file:
-        content_to_write = await sub_maker.generate_cn_subs(content)
-        # content_to_write = sub_maker.generate_subs()
-        await file.write(content_to_write)
+    if language == "zh":
+        async with aiofiles.open(f_vtt, "w", encoding="utf-8") as file:
+            content_to_write = await sub_maker.generate_cn_subs(content)
+            # content_to_write = sub_maker.generate_subs()
+            await file.write(content_to_write)
 
-    # vtt -》 srt
-    idx = 1  # 字幕序号
-    with open(f_srt, "w", encoding="utf-8") as f_out:
-        for line in open(f_vtt, encoding="utf-8"):
-            if "-->" in line:
-                f_out.write("%d\n" % idx)
-                idx += 1
-                line = line.replace(".", ",")  # 这行不是必须的，srt也能识别'.'
-            if idx > 1:  # 跳过header部分
-                f_out.write(line)
+        # vtt -》 srt
+        idx = 1  # 字幕序号
+        with open(f_srt, "w", encoding="utf-8") as f_out:
+            for line in open(f_vtt, encoding="utf-8"):
+                if "-->" in line:
+                    f_out.write("%d\n" % idx)
+                    idx += 1
+                    line = line.replace(".", ",")  # 这行不是必须的，srt也能识别'.'
+                if idx > 1:  # 跳过header部分
+                    f_out.write(line)
+    else:
+        # 定义一个空列表来存储文件的每一行
+        lines = []
+
+        # 打开文件并读取每一行
+        with open(participle_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                # 去除每行末尾的换行符，并添加到列表中
+                lines.append(line.strip())
+
+        # 使用列表推导式去除空行
+        lines = [line for line in lines if line and not line.isdigit()]
+
+        with open(f_srt, "w", encoding="utf-8") as f_out:
+            f_out.write(sub_maker.generate_subs_pro(lines))
 
 
 # 合并文件夹下所有MP3文件为一个音频文件
@@ -368,10 +446,6 @@ async def merge_bgm(bgm_folder):
         for mp3_file in mp3_files:
             filelist.write(f"file '{mp3_file}'\n")
 
-    # with open('bgm_list.txt', 'w', encoding="utf-8") as filelist:
-    #     for mp3_file in os.listdir(bgm_folder):
-    #         if mp3_file.endswith('.mp3'):
-    #             filelist.write(f"file '{os.path.join(bgm_folder, mp3_file)}'\n")
     subprocess.run(
         [
             "ffmpeg",
@@ -522,7 +596,7 @@ async def mix_main_and_bgm(main_audio, bgm_file, save_dir):
     os.replace(output_file, main_audio)
 
 
-async def picture_processing_time(filename, section_path, save_dir, name):
+async def srt_to_list(filename):
     subtitles = []  # 存储最终结果的列表
     text = []  # 临时存储当前字幕块的文本行
     timecode = None  # 初始化时间码变量
@@ -543,42 +617,54 @@ async def picture_processing_time(filename, section_path, save_dir, name):
             elif line:  # 非空行即为字幕文本行
                 text.append(line)
 
-            # 无需处理空行，因为它们在这个逻辑中不起作用
-
         # 添加文件末尾的最后一个字幕块（如果有）
         if text:
             subtitles.append((timecode, " ".join(text)))
-    with open(section_path, "r", encoding="utf-8") as f:
-        section_list = f.readlines()
-    section_time_list = []
-    index_ = 0
-    time_ = "00:00:00,000"
-    for si, section in enumerate(section_list):
-        if len(section_list) == si + 1:
-            # 最后这段不处理 默认使用剩余所有time
-            next_start_time = subtitles[-1][0].split(" --> ")[1]
-            diff = await time_difference(time_, next_start_time)
-            section_time_list.append(diff)
-            break
-        content_ = await CustomSubMaker().remove_non_chinese_chars(section)
-        for i, v in enumerate(subtitles):
-            if i <= index_:
-                continue
-            if v[1] not in content_:
-                next_start_time = v[0].split(" --> ")[0]
+    return subtitles
+
+
+async def picture_processing_time(filename, section_path, save_dir, name):
+
+    subtitles = await srt_to_list(filename)
+    if language == "zh":
+        with open(section_path, "r", encoding="utf-8") as f:
+            section_list = f.readlines()
+        section_time_list = []
+        index_ = 0
+        time_ = "00:00:00,000"
+        for si, section in enumerate(section_list):
+            if len(section_list) == si + 1:
+                # 最后这段不处理 默认使用剩余所有time
+                next_start_time = subtitles[-1][0].split(" --> ")[1]
                 diff = await time_difference(time_, next_start_time)
                 section_time_list.append(diff)
-                index_ = i
-                time_ = next_start_time
                 break
-            else:
-                content_.replace(v[1], "")
-    with open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
-        f3.write(str(section_time_list))
+            content_ = await CustomSubMaker().remove_non_chinese_chars(section)
+            for i, v in enumerate(subtitles):
+                if i <= index_:
+                    continue
+                if v[1] not in content_:
+                    next_start_time = v[0].split(" --> ")[0]
+                    diff = await time_difference(time_, next_start_time)
+                    section_time_list.append(diff)
+                    index_ = i
+                    time_ = next_start_time
+                    break
+        with open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
+            f3.write(str(section_time_list))
+    else:
+        time_list = []
+        init_time = "00:00:00.000"
+        for subtitle in subtitles:
+            duration = await time_difference(init_time, subtitle[0].split(" --> ")[1], time_format=r"%H:%M:%S.%f")
+            time_list.append(duration)
+            init_time = subtitle[0].split(" --> ")[1]
+        with open(os.path.join(save_dir, f"{name}time.txt"), "w", encoding="utf-8") as f3:
+            f3.write(str(time_list))
 
 
 async def create_voice_srt_new3(
-    name, file_txt, save_dir, p_voice=role, p_rate=rate, p_volume=volume
+    name, file_txt, save_dir, participle_path=None, p_voice=role, p_rate=rate, p_volume=volume
 ):
     mp3_name = f"{name}.mp3"
     vtt_name = f"{name}.vtt"
@@ -595,17 +681,19 @@ async def create_voice_srt_new3(
     if mp3_exists and srt_exists and time_exists:
         return
     await edge_gen_srt2(
-        file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume
+        file_txt, file_mp3, file_vtt, file_srt, p_voice, p_rate, p_volume, participle_path
     )
 
-    await srt_regen_new(file_srt, file_srt_final, False)
-
+    if language == 'zh':
+        await srt_regen_new(file_srt, file_srt_final, False)
+        #  删除其他生成文件
+        os.remove(file_vtt)
+        os.remove(file_srt)
+    else:
+        os.replace(file_srt, file_srt_final)
     await picture_processing_time(
         file_srt_final, os.path.join(save_dir, f"{name}.txt"), save_dir, name
     )
-    #  删除其他生成文件
-    os.remove(file_vtt)
-    os.remove(file_srt)
 
     if bgm:
         # 如果使用bgm
@@ -624,7 +712,7 @@ async def voice_srt(participle_path, path, name_path, name):
         while attempts < max_attempts:
             try:
                 # 尝试执行可能出错的操作
-                await create_voice_srt_new3(name, content, path)
+                await create_voice_srt_new3(name, content, path, participle_path)
                 break  # 如果成功，则跳出循环
             except Exception as e:
                 # 捕获到异常，打印错误信息，并决定是否重试

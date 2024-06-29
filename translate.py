@@ -10,6 +10,7 @@ from load_config import get_yaml_config
 config = get_yaml_config()
 access_key = config["potential"]["access_key_id"]
 secret = config["potential"]["access_key_secret"]
+language = config["book"]["language"]
 
 
 class Sample:
@@ -48,6 +49,8 @@ class Sample:
             source_language="zh",
             target_language="en",
     ) -> None:
+        if language == "en":
+            return text
         client = Sample.create_client(
             access_key, secret, region
         )

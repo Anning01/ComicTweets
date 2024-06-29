@@ -27,6 +27,7 @@ animation = config["video"]["animation"]
 width = config["stable_diffusion"]["width"]
 height = config["stable_diffusion"]["height"]
 animation_speed = config["video"]["animation_speed"]
+is_subtitles = config["video"]["subtitles"]
 
 if imagemagick_path:
     os.environ["IMAGEMAGICK_BINARY"] = rf"{imagemagick_path}"
@@ -220,7 +221,8 @@ class Main:
             ]
             subprocess.run(cmd, check=True)
 
-        self.create_srt(out_path, srt_path, save_path, name)
+        if is_subtitles:
+            self.create_srt(out_path, srt_path, save_path, name)
 
     def create_animated_segment(
             self, image_path, duration, output_path, index, multiple, action

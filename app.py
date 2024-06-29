@@ -18,6 +18,7 @@ access_key_id = config["potential"]["access_key_id"]
 access_key_secret = config["potential"]["access_key_secret"]
 ROLES_DIR = "roles"
 
+
 def processing():
     st.title("批量处理")
     st.header("欢迎使用我们的视频处理工具")
@@ -135,6 +136,7 @@ def configuration_information():
         config["potential"]["access_key_secret"] = access_key_secret_
         edit_yaml_config(config)
         st.toast('配置已更新', icon='😍')
+        st.experimental_rerun()  # 重新加载 Streamlit 应用
 
     source_path_ = st.text_input("小说目录", source_path, help="请复制小说目录绝对路径或相对路径")
     output_path_ = st.text_input("输出目录", output_path, help="生产后视频的保存路径")
@@ -146,7 +148,6 @@ def configuration_information():
     access_key_secret_ = st.text_input("阿里云翻译access_key_secret", access_key_secret, help="阿里云access_key_secret")
 
     st.button("保存配置", on_click=save_config, use_container_width=True)
-
 
 
 if __name__ == "__main__":

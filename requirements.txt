@@ -8,4 +8,5 @@ pyyaml
 aiofiles
 alibabacloud-alimt20181012
 openai
+nltk
 pillow==9.5

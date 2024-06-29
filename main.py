@@ -27,6 +27,7 @@ memory = config["book"]["memory"]
 once = config["video"]["once"]
 is_translate = config["potential"]["translate"]
 name = config["book"]["name"]
+language = config["book"]["language"]
 role_enabled = config["stable_diffusion"]["role"]
 
 # if not name:
