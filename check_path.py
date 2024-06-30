@@ -46,7 +46,7 @@ def download_and_install_nltk_data(package_name):
         print(f"{package_name} 数据包下载完成。")
 
         # 找到NLTK数据目录
-        nltk_data_dir = nltk.data.find('')
+        nltk_data_dir = nltk.data.path[0] if nltk.data.path else os.path.join(os.path.expanduser('~'), 'nltk_data')
         extract_path = os.path.join(nltk_data_dir, 'tokenizers')
 
         # 如果tokenizers目录不存在，则创建它
