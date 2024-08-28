@@ -402,7 +402,7 @@ async def edge_gen_srt2(f_txt, f_mp3, f_vtt, f_srt, p_voice, p_rate, p_volume, p
 
     if language == "zh":
         async with aiofiles.open(f_vtt, "w", encoding="utf-8") as file:
-            content_to_write = await sub_maker.generate_cn_subs(content)
+            content_to_write = await sub_maker.generate_subs_based_on_punc(content)
             # content_to_write = sub_maker.generate_subs()
             await file.write(content_to_write)
 
@@ -643,7 +643,8 @@ async def picture_processing_time(filename, section_path, save_dir, name):
             for i, v in enumerate(subtitles):
                 if i <= index_:
                     continue
-                if v[1] not in content_:
+                v_text = await CustomSubMaker().remove_non_chinese_chars(v[1])
+                if v_text not in content_:
                     next_start_time = v[0].split(" --> ")[0]
                     diff = await time_difference(time_, next_start_time)
                     section_time_list.append(diff)
