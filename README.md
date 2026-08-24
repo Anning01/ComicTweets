@@ -2,7 +2,7 @@
 自动化构建漫画推文，使用stable diffusion来生成图片
 
 # 请使用最新AI生成动漫
-<h3 style="color: green">请使用最新的 novelvids: [novelvids](https://github.com/Anning01/novelvids) </h3>
+<h3 style="color: green">请使用最新的 novelvids: https://github.com/Anning01/novelvids </h3>
 
 
 # Video Effects
