@@ -1,6 +1,10 @@
 # ComicTweets
 自动化构建漫画推文，使用stable diffusion来生成图片
 
+# 请使用最新AI生成动漫
+<h3 style="color: green">请使用最新的 novelvids: [novelvids](https://github.com/Anning01/novelvids) </h3>
+
+
 # Video Effects
 [![Watch the video](https://img.youtube.com/vi/ZcZbA1lVa34/0.jpg)](https://youtu.be/ZcZbA1lVa34 "Watch the video")
 
